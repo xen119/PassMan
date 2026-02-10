@@ -27,6 +27,7 @@ const saveEntryButton = document.getElementById('save-entry-btn');
 
 const usernameInput = document.getElementById('username');
 const passwordInput = document.getElementById('password');
+const rememberPasswordInput = document.getElementById('remember-password');
 
 const entryLabel = document.getElementById('entry-label');
 const entryUsername = document.getElementById('entry-username');
@@ -163,6 +164,19 @@ function updateAutoLockDisplay() {
   }
 }
 
+function normalizeDomainUrl(value) {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.origin;
+  } catch {
+    return value;
+  }
+}
+
 function loadAutoLockPreference() {
   if (!chrome.storage?.local) {
     updateAutoLockSetting(autoLockMinutes, { notifyBackground: true });
@@ -174,6 +188,49 @@ function loadAutoLockPreference() {
     const minutes = Number.isNaN(stored) ? autoLockMinutes : stored;
     updateAutoLockSetting(minutes, { notifyBackground: true });
   });
+}
+
+function loadRememberedCredentials() {
+  if (!chrome.storage?.local || !rememberPasswordInput) {
+    return;
+  }
+
+  chrome.storage.local.get('rememberedCredentials', (result) => {
+    const credentials = result?.rememberedCredentials;
+    if (!credentials) {
+      rememberPasswordInput.checked = false;
+      return;
+    }
+
+    const { username, password } = credentials;
+    usernameInput.value = username ?? '';
+    passwordInput.value = password ?? '';
+    rememberPasswordInput.checked = true;
+  });
+}
+
+function saveRememberedCredentials(username, password) {
+  if (!chrome.storage?.local) {
+    return;
+  }
+
+  chrome.storage.local.set({
+    rememberedCredentials: {
+      username,
+      password,
+    },
+  });
+}
+
+function clearRememberedCredentials() {
+  if (!chrome.storage?.local) {
+    return;
+  }
+
+  chrome.storage.local.remove('rememberedCredentials');
+  if (rememberPasswordInput) {
+    rememberPasswordInput.checked = false;
+  }
 }
 
 function handleAutoLockSave() {
@@ -335,21 +392,34 @@ function loadPendingCandidate() {
   });
 }
 
-function applyPendingToForm() {
+async function savePendingCandidateToVault() {
   if (!state.pendingCandidate) {
     return;
   }
 
   const pickup = state.pendingCandidate;
-  entryLabel.value = pickup.label || new URL(pickup.url ?? location.href).hostname;
-  entryUsername.value = pickup.username ?? '';
-  entryPassword.value = pickup.password ?? '';
-  entryNotes.value = '';
-  entryUrl.value = pickup.url ?? '';
-  entryOtpSecret.value = pickup.otpSecret ?? '';
-  setStatus('Loaded detected password — save to your vault when ready.');
-  prepareEntryFormForAdd();
-  clearPendingCandidate();
+  const hostname =
+    (pickup.hostname ?? new URL(pickup.url ?? location.href).hostname) || 'Saved site';
+  const entryPayload = {
+    id: ensureCryptoUUID(),
+    label: pickup.label || hostname,
+    username: pickup.username ?? '',
+    password: pickup.password ?? '',
+    notes: '',
+    url: normalizeDomainUrl(pickup.url ?? ''),
+    otpSecret: pickup.otpSecret ?? '',
+    updatedAt: new Date().toISOString(),
+  };
+
+  state.entries = [entryPayload, ...state.entries];
+  renderEntries();
+  try {
+    await persistVault();
+    setStatus('Detected password saved to your vault.');
+    clearPendingCandidate();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
 }
 
 function setPasswordVisible(span) {
@@ -700,9 +770,9 @@ function handlePendingPromptClick(event) {
     return;
   }
   const action = actionButton.dataset.action;
-  if (action === 'apply-candidate') {
-    applyPendingToForm();
-  }
+    if (action === 'apply-candidate') {
+      savePendingCandidateToVault().catch((error) => setStatus(error.message, true));
+    }
   if (action === 'dismiss-candidate') {
     clearPendingCandidate();
   }
@@ -769,6 +839,12 @@ async function handleAuthentication(mode) {
     state.userId = payload.user.id;
     state.masterPassword = password;
     state.masterKey = null;
+
+    if (rememberPasswordInput?.checked) {
+      saveRememberedCredentials(username, password);
+    } else {
+      clearRememberedCredentials();
+    }
 
     entryForm.reset();
     prepareEntryFormForAdd();
@@ -1091,6 +1167,8 @@ document.addEventListener('keydown', (event) => {
 });
 
 loadPendingCandidate();
+
+loadRememberedCredentials();
 
 loadAutoLockPreference();
 restoreSessionFromBackground().catch(() => {});

@@ -32,9 +32,9 @@ body {
 }
 
 .wrapper {
-  width: min(520px, 95vw);
-  min-width: 360px;
-  max-width: 520px;
+  width: min(620px, 95vw);
+  min-width: 460px;
+  max-width: 620px;
   aspect-ratio: auto;
   padding: 1.35rem 1.5rem;
   border-radius: 32px;
@@ -45,9 +45,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow: hidden;
-  max-height: min(95vh, 520px);
-  min-height: min(440px, 95vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  max-height: min(95vh, 760px);
+  min-height: min(520px, 95vh);
 }
 
 header {
@@ -115,10 +117,7 @@ section {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  overflow-y: auto;
   min-height: 0;
-  padding-right: 0.2rem;
-  scrollbar-width: thin;
 }
 
 label {
@@ -131,6 +130,21 @@ label {
 small {
   font-size: 0.7rem;
   color: var(--muted);
+}
+
+.remember-password {
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  text-transform: none;
+}
+
+.remember-password input {
+  margin: 0;
+  transform: scale(1.05);
+  accent-color: var(--accent-end);
 }
 
 input,
@@ -451,9 +465,10 @@ button:active {
   flex-direction: column;
   gap: 0.65rem;
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 220px;
   padding-right: 0.2rem;
-  min-height: 0;
+  scrollbar-width: thin;
 }
 
 .entry-row {
