@@ -51,6 +51,7 @@ const autoLockValueDisplay = document.getElementById('auto-lock-value');
 const sharedVaultListEl = document.getElementById('shared-vault-list');
 const sharedVaultStatusEl = document.getElementById('shared-vault-status');
 const sharedVaultEmptyEl = document.getElementById('shared-vault-empty');
+const scanOtpButton = document.getElementById('scan-otp-btn');
 
 const DEFAULT_AUTO_LOCK_MINUTES = 5;
 const AUTO_LOCK_PREF_KEY = 'autoLockMinutes';
@@ -196,6 +197,23 @@ function loadAutoLockPreference() {
     const stored = Number(result?.[AUTO_LOCK_PREF_KEY]);
     const minutes = Number.isNaN(stored) ? autoLockMinutes : stored;
     updateAutoLockSetting(minutes, { notifyBackground: true });
+  });
+}
+
+function loadOtpScanResult() {
+  if (!chrome.storage?.local || !entryOtpSecret) {
+    return;
+  }
+
+  chrome.storage.local.get('otpScanResult', (result) => {
+    const secret = result?.otpScanResult;
+    if (!secret) {
+      return;
+    }
+
+    entryOtpSecret.value = secret;
+    setStatus('OTP secret imported from scan');
+    chrome.storage.local.remove('otpScanResult');
   });
 }
 
@@ -1284,6 +1302,12 @@ entryModal?.addEventListener('click', (event) => {
     closeEntryModal();
   }
 });
+
+scanOtpButton?.addEventListener('click', () => {
+  const scanUrl = chrome.runtime.getURL('otp-scan.html');
+  window.open(scanUrl, 'otp-scan', 'width=440,height=640');
+});
+
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') {
     return;
@@ -1304,17 +1328,28 @@ loadPendingCandidate();
 loadRememberedCredentials();
 
 loadAutoLockPreference();
+loadOtpScanResult();
 restoreSessionFromBackground().catch(() => {});
 
 chrome.storage?.onChanged?.addListener?.((changes, area) => {
-  if (area !== 'local' || !changes.pendingSave) {
+  if (area !== 'local') {
     return;
   }
 
-  if (changes.pendingSave.newValue) {
-    setPendingCandidate(changes.pendingSave.newValue);
-  } else {
-    clearPendingCandidate();
+  if (changes.pendingSave) {
+    if (changes.pendingSave.newValue) {
+      setPendingCandidate(changes.pendingSave.newValue);
+    } else {
+      clearPendingCandidate();
+    }
+  }
+
+  if (changes.otpScanResult?.newValue) {
+    if (entryOtpSecret) {
+      entryOtpSecret.value = changes.otpScanResult.newValue;
+      setStatus('OTP secret imported from scan');
+    }
+    chrome.storage.local.remove('otpScanResult');
   }
 });
 

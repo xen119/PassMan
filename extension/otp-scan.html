@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scan OTP QR</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        background: #050a1f;
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1.25rem;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+      p {
+        margin: 0;
+        color: #9aa4c1;
+        font-size: 0.85rem;
+      }
+      .video-wrapper {
+        width: min(360px, 100%);
+        border-radius: 16px;
+        overflow: hidden;
+        background: rgba(10, 14, 30, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+      video {
+        width: 100%;
+        height: 240px;
+        object-fit: cover;
+        background: rgba(2, 6, 23, 0.9);
+      }
+      .status {
+        min-height: 1.1rem;
+        font-size: 0.78rem;
+        color: #9aa4c1;
+      }
+      .status.error {
+        color: #fda4af;
+      }
+      .actions {
+        display: flex;
+        width: 100%;
+        gap: 0.5rem;
+      }
+      button {
+        flex: 1;
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+      button.primary {
+        background: linear-gradient(135deg, #7f5dff, #a855f7);
+        color: white;
+      }
+      button.secondary {
+        background: rgba(148, 163, 184, 0.25);
+        color: white;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+      }
+      .secret {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 0.9rem;
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 10px;
+        padding: 0.5rem;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        min-height: 42px;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Scan OTP QR</h1>
+    <p>Select the window/tab that displays the OTP QR code.</p>
+    <div class="video-wrapper">
+      <video id="scan-video" playsinline autoplay muted></video>
+    </div>
+    <p id="scan-status" class="status">Waiting for screen capture...</p>
+    <div id="secret-output" class="secret" hidden></div>
+    <div class="actions">
+      <button type="button" id="scan-cancel" class="secondary">Cancel</button>
+      <button type="button" id="scan-copy" class="primary" hidden>Copy secret</button>
+    </div>
+    <script type="module" src="scripts/otp-scan.js"></script>
+  </body>
+</html>

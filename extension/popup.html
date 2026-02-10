@@ -159,12 +159,15 @@
             <input id="entry-url" name="entry-url" type="url" placeholder="https://example.com" />
 
             <label for="entry-otp-secret">OTP secret (optional)</label>
-            <input
-              id="entry-otp-secret"
-              name="entry-otp-secret"
-              type="text"
-              placeholder="Base32 secret (A-Z2-7)"
-            />
+            <div class="otp-input-row">
+              <input
+                id="entry-otp-secret"
+                name="entry-otp-secret"
+                type="text"
+                placeholder="Base32 secret (A-Z2-7)"
+              />
+              <button type="button" id="scan-otp-btn" class="secondary">Scan QR</button>
+            </div>
             <small>Enter the base32 secret to generate a TOTP within the extension.</small>
 
             <div class="entry-form-actions">
