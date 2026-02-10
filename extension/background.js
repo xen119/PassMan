@@ -73,19 +73,75 @@ chrome.storage.local.get(AUTO_LOCK_PREF_KEY, (result) => {
   updateAutoLockTimeout(result?.[AUTO_LOCK_PREF_KEY] ?? DEFAULT_AUTO_LOCK_MINUTES);
 });
 
-function findEntryForHost(hostname) {
-  return vaultCache.find((entry) => {
-    if (!entry.url) {
-      return false;
-    }
+function normalizeHostname(hostname) {
+  if (!hostname) {
+    return '';
+  }
 
-    try {
-      const entryHost = new URL(entry.url).hostname;
-      return entryHost === hostname;
-    } catch {
-      return entry.url.includes(hostname);
-    }
+  let normalized = hostname.trim().toLowerCase();
+  const portIndex = normalized.indexOf(':');
+  if (portIndex >= 0) {
+    normalized = normalized.slice(0, portIndex);
+  }
+  if (normalized.startsWith('www.')) {
+    normalized = normalized.slice(4);
+  }
+  return normalized;
+}
+
+function getEntryHostname(entry) {
+  if (!entry?.url) {
+    return '';
+  }
+
+  try {
+    return normalizeHostname(new URL(entry.url).hostname);
+  } catch {
+    return normalizeHostname(entry.url);
+  }
+}
+
+function hostMatches(entryHost, targetHost) {
+  if (!entryHost || !targetHost) {
+    return false;
+  }
+
+  if (entryHost === targetHost) {
+    return true;
+  }
+
+  return entryHost.endsWith(`.${targetHost}`);
+}
+
+function entriesForHostname(hostname) {
+  const targetHost = normalizeHostname(hostname);
+  if (!targetHost) {
+    return [];
+  }
+
+  return vaultCache.filter((entry) => {
+    const entryHost = getEntryHostname(entry);
+    return hostMatches(entryHost, targetHost);
   });
+}
+
+function findEntryForHost(hostname, username) {
+  const matches = entriesForHostname(hostname);
+  if (!matches.length) {
+    return null;
+  }
+
+  const normalizedUsername = username?.trim().toLowerCase();
+  if (normalizedUsername) {
+    const matchedByUsername = matches.find(
+      (entry) => (entry.username ?? '').trim().toLowerCase() === normalizedUsername
+    );
+    if (matchedByUsername) {
+      return matchedByUsername;
+    }
+  }
+
+  return matches[0];
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -163,11 +219,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         return '';
       }
     })();
-    const existingEntry = lookupHostname ? findEntryForHost(lookupHostname) : null;
-    if (existingEntry && existingEntry.password === credential.password) {
-      sendResponse({ stored: false });
-      return;
+    const domainEntries = lookupHostname ? entriesForHostname(lookupHostname) : [];
+    if (domainEntries.length) {
+      const matchingPassword = domainEntries.find((entry) => entry.password === credential.password);
+      if (matchingPassword) {
+        sendResponse({ stored: false });
+        return;
+      }
     }
+    const existingEntry =
+      lookupHostname && domainEntries.length
+        ? findEntryForHost(lookupHostname, credential.username)
+        : null;
 
     const pending = {
       id: crypto.randomUUID?.() ?? String(Date.now()),
