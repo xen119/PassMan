@@ -177,6 +177,15 @@ function normalizeDomainUrl(value) {
   }
 }
 
+function findEntryByNormalizedUrl(url) {
+  const normalized = normalizeDomainUrl(url ?? '');
+  if (!normalized) {
+    return null;
+  }
+
+  return state.entries.find((entry) => normalizeDomainUrl(entry.url ?? '') === normalized);
+}
+
 function loadAutoLockPreference() {
   if (!chrome.storage?.local) {
     updateAutoLockSetting(autoLockMinutes, { notifyBackground: true });
@@ -346,6 +355,26 @@ async function restoreSessionFromBackground() {
 }
 
 function setPendingCandidate(candidate) {
+  if (!candidate) {
+    state.pendingCandidate = null;
+    renderPendingPrompt();
+    return;
+  }
+
+  const existingEntry = findEntryByNormalizedUrl(candidate.url ?? '');
+  const isSamePassword = existingEntry && existingEntry.password === candidate.password;
+  if (isSamePassword) {
+    if (chrome.storage?.local) {
+      chrome.storage.local.remove('pendingSave');
+    }
+    return;
+  }
+
+  if (existingEntry) {
+    candidate.existingEntryId = existingEntry.id;
+    candidate.existingEntryLabel = existingEntry.label;
+  }
+
   state.pendingCandidate = candidate;
   renderPendingPrompt();
 }
@@ -370,12 +399,21 @@ function renderPendingPrompt() {
   pendingPrompt.hidden = false;
 
   const label = state.pendingCandidate.label || state.pendingCandidate.url || 'Saved site';
-  const hostname = state.pendingCandidate.hostname ?? new URL(state.pendingCandidate.url).hostname;
+  let hostname = 'Saved site';
+  try {
+    hostname = state.pendingCandidate.hostname ?? new URL(state.pendingCandidate.url).hostname;
+  } catch {
+    hostname = state.pendingCandidate.hostname ?? hostname;
+  }
+  const isUpdate = Boolean(state.pendingCandidate.existingEntryId);
+  const actionLabel = isUpdate ? 'Update this password' : 'Save this password';
+  const headerText = isUpdate ? 'Detected password change' : 'Detected new password';
+
   pendingPrompt.innerHTML = `
-    <h3>Detected new password for ${escapeHtml(hostname)}</h3>
+    <h3>${headerText} for ${escapeHtml(hostname)}</h3>
     <p>${escapeHtml(label)}</p>
     <div class="pending-actions">
-      <button type="button" data-action="apply-candidate">Save this password</button>
+      <button type="button" data-action="apply-candidate">${escapeHtml(actionLabel)}</button>
       <button type="button" data-action="dismiss-candidate">Dismiss</button>
     </div>
   `;
@@ -400,22 +438,55 @@ async function savePendingCandidateToVault() {
   const pickup = state.pendingCandidate;
   const hostname =
     (pickup.hostname ?? new URL(pickup.url ?? location.href).hostname) || 'Saved site';
-  const entryPayload = {
-    id: ensureCryptoUUID(),
-    label: pickup.label || hostname,
-    username: pickup.username ?? '',
-    password: pickup.password ?? '',
-    notes: '',
-    url: normalizeDomainUrl(pickup.url ?? ''),
-    otpSecret: pickup.otpSecret ?? '',
-    updatedAt: new Date().toISOString(),
-  };
-
-  state.entries = [entryPayload, ...state.entries];
+  const normalizedUrl = normalizeDomainUrl(pickup.url ?? '');
+  const updatedAt = new Date().toISOString();
+  const existingEntryId = pickup.existingEntryId;
+  let entryPayload;
+  let isUpdate = false;
+  if (existingEntryId) {
+    const existingEntry = state.entries.find((entry) => entry.id === existingEntryId);
+    if (existingEntry) {
+      isUpdate = true;
+      entryPayload = {
+        ...existingEntry,
+        label: pickup.label || existingEntry.label || hostname,
+        username: pickup.username ?? existingEntry.username ?? '',
+        password: pickup.password ?? existingEntry.password ?? '',
+        url: normalizedUrl || existingEntry.url,
+        otpSecret: pickup.otpSecret ?? existingEntry.otpSecret ?? '',
+        updatedAt,
+      };
+      state.entries = [entryPayload, ...state.entries.filter((entry) => entry.id !== existingEntryId)];
+    } else {
+      entryPayload = {
+        id: ensureCryptoUUID(),
+        label: pickup.label || hostname,
+        username: pickup.username ?? '',
+        password: pickup.password ?? '',
+        notes: '',
+        url: normalizedUrl,
+        otpSecret: pickup.otpSecret ?? '',
+        updatedAt,
+      };
+      state.entries = [entryPayload, ...state.entries];
+    }
+  } else {
+    entryPayload = {
+      id: ensureCryptoUUID(),
+      label: pickup.label || hostname,
+      username: pickup.username ?? '',
+      password: pickup.password ?? '',
+      notes: '',
+      url: normalizedUrl,
+      otpSecret: pickup.otpSecret ?? '',
+      updatedAt,
+    };
+    state.entries = [entryPayload, ...state.entries];
+  }
   renderEntries();
   try {
     await persistVault();
-    setStatus('Detected password saved to your vault.');
+    setStatus(isUpdate ? 'Detected password updated in your vault.' : 'Detected password saved to your vault.');
     clearPendingCandidate();
   } catch (error) {
     setStatus(error.message, true);

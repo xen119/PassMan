@@ -30,12 +30,13 @@
               required
             />
 
-            <div class="remember-password">
-              <label for="remember-password">
-                <input type="checkbox" id="remember-password" />
-                Remember password on this device
-              </label>
-            </div>
+          <div class="remember-password">
+            <label class="remember-toggle">
+              <input type="checkbox" id="remember-password" />
+              <span class="remember-switch" aria-hidden="true"></span>
+              <span class="remember-label">Remember password on this device</span>
+            </label>
+          </div>
 
             <div class="form-actions">
               <button type="submit" id="login-btn" class="primary">Log in</button>
