@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shared Vault Admin</title>
+    <style>
+      :root {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        color: #e2e8f0;
+        background: #030712;
+      }
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #020617, #0f172a);
+        min-height: 100vh;
+      }
+      .shell {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      h1, h2, h3 {
+        margin: 0;
+        color: #f8fafc;
+      }
+      p {
+        margin: 0.2rem 0 0;
+        color: #94a3b8;
+      }
+      .panel {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 18px;
+        padding: 1.35rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 15px 40px rgba(2, 6, 23, 0.65);
+      }
+      label {
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+      input, textarea, select {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        background: rgba(2, 6, 23, 0.9);
+        color: #e2e8f0;
+        padding: 0.6rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+      }
+      textarea {
+        min-height: 70px;
+        resize: vertical;
+      }
+      button {
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+        border-radius: 999px;
+        padding: 0.6rem 1.2rem;
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        color: white;
+        transition: transform 0.2s ease;
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      .vault-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        margin-top: 1rem;
+      }
+      .vault-card {
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(15, 23, 42, 0.75);
+        cursor: pointer;
+      }
+      .vault-card.active {
+        border-color: rgba(99, 102, 241, 0.8);
+        box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4);
+      }
+      .members {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+      }
+      .member-chip {
+        padding: 0.35rem 0.6rem;
+        border-radius: 999px;
+        background: rgba(99, 102, 241, 0.15);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        font-size: 0.85rem;
+      }
+      .member-chip.viewer {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.4);
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .row > div {
+        flex: 1;
+      }
+      .status {
+        font-size: 0.8rem;
+        color: #a5b4fc;
+        min-height: 1.1rem;
+      }
+      .member-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    </style>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <div id="root"></div>
+    </div>
+    <script>
+      const { useState, useEffect } = React;
+
+      const fetchJson = async (path, options = {}) => {
+        const response = await fetch(path, options);
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || 'Request failed');
+        }
+        return response.json();
+      };
+
+      const randomBase64 = (length = 24) => {
+        const bytes = new Uint8Array(length);
+        crypto.getRandomValues(bytes);
+        let str = '';
+        bytes.forEach((b) => (str += String.fromCharCode(b)));
+        return btoa(str);
+      };
+
+      function App() {
+        const [token, setToken] = useState('');
+        const [vaults, setVaults] = useState([]);
+        const [selected, setSelected] = useState(null);
+        const [status, setStatus] = useState('Paste a JWT and load shared vaults.');
+        const [name, setName] = useState('');
+        const [members, setMembers] = useState([{ userId: '', role: 'member' }]);
+
+        const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+
+        useEffect(() => {
+          if (token) {
+            loadVaults();
+          }
+        }, [token]);
+
+        const loadVaults = async () => {
+          if (!token) {
+            setStatus('JWT required');
+            return;
+          }
+          setStatus('Loading shared vaults...');
+          try {
+            const payload = await fetchJson('/shared-vaults', { headers });
+            setVaults(payload.sharedVaults || []);
+            setStatus('Vaults loaded.');
+          } catch (err) {
+            setStatus(err.message);
+          }
+        };
+
+        const selectVault = async (vaultId) => {
+          if (!token) return;
+          setStatus('Loading vault...');
+          try {
+            const payload = await fetchJson(`/shared-vaults/${vaultId}`, { headers });
+            setSelected(payload.vault);
+            setStatus(`Vault "${payload.vault.name}" loaded.`);
+          } catch (err) {
+            setStatus(err.message);
+          }
+        };
+
+        const updateMember = (index, field, value) => {
+          setMembers((prev) => prev.map((member, idx) => (idx === index ? { ...member, [field]: value } : member)));
+        };
+
+        const addMember = () => setMembers((prev) => [...prev, { userId: '', role: 'member' }]);
+
+        const createVault = async () => {
+          if (!name.trim()) {
+            setStatus('Vault name is required.');
+            return;
+          }
+          if (!token) {
+            setStatus('JWT required.');
+            return;
+          }
+          const wrappers = members
+            .filter((member) => member.userId.trim())
+            .map((member) => ({
+              userId: member.userId.trim(),
+              wrappedKey: randomBase64(32),
+              role: member.role,
+            }));
+          if (!wrappers.length) {
+            setStatus('At least one member is required.');
+            return;
+          }
+          const payload = {
+            name: name.trim(),
+            encryptedVault: randomBase64(32),
+            iv: randomBase64(12),
+            salt: randomBase64(16),
+            memberWrappers: wrappers,
+          };
+          try {
+            await fetchJson('/shared-vaults', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(payload),
+            });
+            setStatus('Shared vault created. Reloading...');
+            setName('');
+            setMembers([{ userId: '', role: 'member' }]);
+            await loadVaults();
+          } catch (err) {
+            setStatus(err.message);
+          }
+        };
+
+        return React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(
+            'div',
+            { className: 'panel' },
+            React.createElement('h1', null, 'Shared Vaults'),
+            React.createElement(
+              'p',
+              null,
+              'Create and view shared vaults using your API JWT. Select a vault to inspect members and their access level.'
+            ),
+            React.createElement(
+              'label',
+              null,
+              'JWT'
+            ),
+            React.createElement('textarea', {
+              rows: 3,
+              placeholder: 'Paste Authorization Bearer token (JWT)',
+              value: token,
+              onChange: (event) => setToken(event.target.value.trim()),
+            }),
+            React.createElement('p', { className: 'status' }, status)
+          ),
+          React.createElement(
+            'div',
+            { className: 'panel' },
+            React.createElement('h2', null, 'Vaults'),
+            vaults.length
+              ? React.createElement(
+                  'div',
+                  { className: 'vault-list' },
+                  vaults.map((vault) =>
+                    React.createElement(
+                      'div',
+                      {
+                        key: vault.id,
+                        className: `vault-card ${selected?.id === vault.id ? 'active' : ''}`,
+                        onClick: () => selectVault(vault.id),
+                      },
+                      React.createElement('strong', null, vault.name || vault.id),
+                      React.createElement('div', null, `${vault.role} • ${vault.status}`)
+                    )
+                  )
+                )
+              : React.createElement('p', null, 'No shared vaults yet.')
+          ),
+          React.createElement(
+            'div',
+            { className: 'panel' },
+            React.createElement('h2', null, 'Create Shared Vault'),
+            React.createElement('label', null, 'Name'),
+            React.createElement('input', {
+              placeholder: 'e.g. Team vault',
+              value: name,
+              onChange: (event) => setName(event.target.value),
+            }),
+            React.createElement('div', { className: 'member-grid' }, members.map((member, idx) =>
+              React.createElement(
+                'div',
+                { key: idx },
+                React.createElement('label', null, `Member ${idx + 1}`),
+                React.createElement('input', {
+                  placeholder: 'User ID / username',
+                  value: member.userId,
+                  onChange: (event) => updateMember(idx, 'userId', event.target.value),
+                }),
+                React.createElement('select', {
+                  value: member.role,
+                  onChange: (event) => updateMember(idx, 'role', event.target.value),
+                },
+                  React.createElement('option', { value: 'member' }, 'Member (edit)'),
+                  React.createElement('option', { value: 'viewer' }, 'Viewer (read-only)')
+                )
+              )
+            )),
+            React.createElement('button', { onClick: addMember, className: 'secondary' }, 'Add another member'),
+            React.createElement('div', { style: { marginTop: '0.75rem' } },
+              React.createElement('button', { onClick: createVault }, 'Create vault')
+            )
+          ),
+          selected &&
+            React.createElement(
+              'div',
+              { className: 'panel' },
+              React.createElement('h2', null, 'Selected Vault'),
+              React.createElement('p', null, `Name: ${selected.name}`),
+              React.createElement('p', null, `Version: ${selected.version || 0}`),
+              React.createElement('p', null, `State: ${selected.memberKeys ? 'Loaded' : '—'}`),
+              React.createElement(
+                'div',
+                { className: 'members' },
+                (selected.members || []).map((member) =>
+                  React.createElement(
+                    'span',
+                    { key: member.userId, className: `member-chip ${member.role === 'viewer' ? 'viewer' : ''}` },
+                    `${member.userId} (${member.role})`
+                  )
+                )
+              )
+            )
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+    </script>
+  </body>
+</html>

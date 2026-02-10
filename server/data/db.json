@@ -1,0 +1,73 @@
+{
+  "users": [
+    {
+      "id": "aNfSwc9Kl7vNxBurGw42h",
+      "username": "dnefdt",
+      "passwordHash": "$2b$12$h5Un0XFSgW.obmrEgEnNCeWhfROxWdG7Bhmojlww0GGRHXuLkWlhu",
+      "createdAt": "2026-02-08T15:28:49.758Z"
+    }
+  ],
+  "vaults": [
+    {
+      "id": "MsB_0azrjGSNxcUcaUdYn",
+      "userId": "aNfSwc9Kl7vNxBurGw42h",
+      "encryptedVault": "+nLXzXiVlSzUnk0E7h9LpdYnhey3LZfbU7rjc5GxiHJTQJ1/xYCdaEluiR/2M6m8NfoT78HZqQOyB05Pt4ZOs5R8Y6bZZUsW4KPoKsq3IbPIhrJg8xcqyfdAi5+o6j0zEvu1xU2mmnU7qO86tvErnbOh++hAZYvDUfeIOqA6ko0YVEK4hp6V/ek+LbUyOTu/b86CPdcG7qwVvH0h/LN7T2AcNCvF19ecO0XU1gDa09rY46xcfqFP9C3jrHc+zOt8Mkje4hN1qBoa/p2SQfbOE6GslOvoZ09PRs91nazPOdcbPEWhJ1BUcZrZPMVX5yNamNnQrwvl6+NXL5BEIhgmgLkFZ1iQJAQTqwg5oEbdn1PXgjrNIlTEGm3o/6i7Lz5MOiUkmH5WRmdCo+hDom0ddR+XRk47GaN30HI5TuHdIa+du9ppALZWBHXbiR5itYkh+ewrjRzziRp17a1xqLe1S7URLAfPGZ0LY0CYg3StCtP2beVs/mMO7bCuEXVJT1OyBYLAyjevP7WAE4Itu8e09PHLPGxw2cK9ysgMSbXsX+oyB041uURO5rMDo0ukkvzMABXaCGBzoZIyoZXdwjuOW+tVYVvebFoVBvss9MLwMwDZFwWiR8Qw3vl+SF6yi5iSSyq1R5zQ/qo=",
+      "iv": "YC83n7RLp6+V1YMA",
+      "salt": "h4diCMOr3YBNcaWPeSJ4aQ==",
+      "version": 14,
+      "updatedAt": "2026-02-09T09:55:27.301Z"
+    }
+  ],
+  "sharedVaults": [
+    {
+      "id": "-pJ-rZ0GoM5vauzIoWeb-",
+      "name": "Team Vault",
+      "ownerId": "aNfSwc9Kl7vNxBurGw42h",
+      "encryptedVault": "1kEmodwXQrzt4VyQpjUPaBippAf/+sWCGkWamV3r1Ts=",
+      "iv": "B6PHiv76Bb1//xDD",
+      "salt": "fYA0b8IsRgAy/rJdNaFaCQ==",
+      "version": 1,
+      "updatedAt": "2026-02-10T12:54:23.118Z",
+      "memberKeys": {
+        "dnefdt": {
+          "wrappedKey": "A7ZVmIAB3t43PsZcNfRR8C3hpDIxjFozJ7TRbPtgGPc=",
+          "role": "member",
+          "status": "active",
+          "invitedAt": "2026-02-10T12:54:23.113Z"
+        },
+        "aNfSwc9Kl7vNxBurGw42h": {
+          "wrappedKey": "A7ZVmIAB3t43PsZcNfRR8C3hpDIxjFozJ7TRbPtgGPc=",
+          "role": "owner",
+          "status": "active",
+          "invitedBy": "aNfSwc9Kl7vNxBurGw42h",
+          "invitedAt": "2026-02-10T12:54:23.113Z"
+        }
+      }
+    },
+    {
+      "id": "K8pLYGqNislWIqZVfOt7S",
+      "name": "Team Vault 2",
+      "ownerId": "aNfSwc9Kl7vNxBurGw42h",
+      "encryptedVault": "N9viBzHLV3+OSjVoHWVeSFc58ANAU5q722DdDlz8Mig=",
+      "iv": "Miqpou8cF9cE7GPp",
+      "salt": "kyYS4jI7fFxInyUxLURygA==",
+      "version": 1,
+      "updatedAt": "2026-02-10T13:15:36.034Z",
+      "memberKeys": {
+        "dnefdt": {
+          "wrappedKey": "9u55HDoBX+iecomtDljTsK6Ye+ZIUuVOtfKij6Gy86U=",
+          "role": "member",
+          "status": "active",
+          "invitedAt": "2026-02-10T13:15:36.034Z"
+        },
+        "aNfSwc9Kl7vNxBurGw42h": {
+          "wrappedKey": "9u55HDoBX+iecomtDljTsK6Ye+ZIUuVOtfKij6Gy86U=",
+          "role": "owner",
+          "status": "active",
+          "invitedBy": "aNfSwc9Kl7vNxBurGw42h",
+          "invitedAt": "2026-02-10T13:15:36.034Z"
+        }
+      }
+    }
+  ]
+}

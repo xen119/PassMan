@@ -1,0 +1,89 @@
+function getCandidateInput(selectors) {
+  for (const selector of selectors) {
+    const element = document.querySelector(selector);
+    if (element && element instanceof HTMLInputElement && !element.disabled) {
+      return element;
+    }
+  }
+  return null;
+}
+
+function fillField(input, value) {
+  if (!input || value == null) {
+    return false;
+  }
+  input.focus();
+  input.value = value;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+chrome.runtime.sendMessage(
+  { type: 'autofill-request', hostname: location.hostname },
+  (response) => {
+    if (!response?.found) {
+      return;
+    }
+
+    const entry = response.entry;
+    const usernameField = getCandidateInput([
+      'input[name*=user]',
+      'input[name*=email]',
+      'input[type=email]',
+      'input[type=text]',
+    ]);
+    const passwordField = getCandidateInput(['input[type=password]', 'input[name*=pass]']);
+    const otpField = getCandidateInput([
+      'input[name*=otp]',
+      'input[name*=token]',
+      'input[name*=code]',
+      'input[placeholder*=OTP]',
+    ]);
+
+    fillField(usernameField, entry.username);
+    fillField(passwordField, entry.password);
+    fillField(otpField, entry.otp);
+  }
+);
+
+function gatherUsername(form) {
+  const selectors = [
+    'input[name*=user]',
+    'input[name*=email]',
+    'input[type=email]',
+    'input[name*=login]',
+    'input[type=text]',
+  ];
+  for (const selector of selectors) {
+    const field = form.querySelector(selector);
+    if (field && field instanceof HTMLInputElement && !field.disabled) {
+      return field.value.trim();
+    }
+  }
+  return '';
+}
+
+function onPasswordSubmit(event) {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) {
+    return;
+  }
+
+  const passwordField = form.querySelector('input[type=password]');
+  if (!passwordField || !passwordField.value) {
+    return;
+  }
+
+  const credential = {
+    username: gatherUsername(form),
+    password: passwordField.value,
+    url: location.href,
+    hostname: location.hostname,
+    label: document.title,
+  };
+
+  chrome.runtime.sendMessage({ type: 'password-detected', credential });
+}
+
+document.addEventListener('submit', onPasswordSubmit, true);
