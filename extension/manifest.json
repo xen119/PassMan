@@ -16,6 +16,12 @@
     "https://*/*",
     "http://*/*"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["scripts/popup.js", "scripts/crypto.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["https://*/*", "http://*/*"],

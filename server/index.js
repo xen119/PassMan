@@ -46,7 +46,12 @@ function mapMemberWrappers(memberWrappers = []) {
   return map;
 }
 
-function findMemberEntry(vault, { userId, username }) {
+function findMemberEntry(vault, identity = {}) {
+  const normalized =
+    typeof identity === 'object' && identity !== null
+      ? identity
+      : { userId: identity, username: identity };
+  const { userId, username } = normalized;
   const members = vault?.memberKeys || {};
   for (const [key, info] of Object.entries(members)) {
     if (
@@ -183,20 +188,31 @@ app.get('/vault', authMiddleware, async (req, res) => {
 
 app.get('/shared-vaults', authMiddleware, async (req, res) => {
   await ensureDb();
-  const shared = db.data.sharedVaults
-    .filter((vault) => hasSharedAccess(vault, req.user.userId))
+  const sharedVaults = Array.isArray(db.data.sharedVaults) ? db.data.sharedVaults : [];
+  const shared = sharedVaults
     .map((vault) => {
-      const member = vault.memberKeys[req.user.userId];
+      if (!hasSharedAccess(vault, req.user.userId)) {
+        return null;
+      }
+      const entry = findMemberEntry(vault, {
+        userId: req.user.userId,
+        username: req.user.username,
+      });
+      if (!entry) {
+        return null;
+      }
+      const { info } = entry;
       return {
         id: vault.id,
         name: vault.name,
         ownerId: vault.ownerId,
-        role: member.role ?? 'member',
-        status: member.status ?? 'active',
-        wrappedKey: member.wrappedKey,
+        role: info.role ?? 'member',
+        status: info.status ?? 'active',
+        wrappedKey: info.wrappedKey,
         updatedAt: vault.updatedAt,
       };
-    });
+    })
+    .filter(Boolean);
 
   res.json({ sharedVaults: shared });
 });
@@ -208,7 +224,15 @@ app.get('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
     return res.status(404).json({ error: 'Shared vault not found' });
   }
 
-  const member = vault.memberKeys[req.user.userId];
+  const memberEntry = findMemberEntry(vault, {
+    userId: req.user.userId,
+    username: req.user.username,
+  });
+  if (!memberEntry) {
+    return res.status(404).json({ error: 'Shared vault access denied' });
+  }
+
+  const { info: memberInfo } = memberEntry;
   res.json({
     vault: {
       id: vault.id,
@@ -220,9 +244,9 @@ app.get('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
       version: vault.version,
       updatedAt: vault.updatedAt,
       memberKeys: vault.memberKeys,
-      wrappedKey: member.wrappedKey,
-      members: Object.entries(vault.memberKeys).map(([userId, info]) => ({
-        userId,
+      wrappedKey: memberInfo.wrappedKey,
+      members: Object.entries(vault.memberKeys).map(([identifier, info]) => ({
+        identifier,
         role: info.role,
         status: info.status,
       })),
