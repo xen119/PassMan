@@ -118,7 +118,12 @@ async function ensureSharedCryptoKey(base64Key) {
 }
 
 function getMemberWrappedKey(vault) {
-  return vault?.wrappedKey ?? vault?.memberKeys?.[state.username]?.wrappedKey;
+  const memberKeys = vault?.memberKeys ?? {};
+  return (
+    memberKeys?.[state.userId]?.wrappedKey ??
+    memberKeys?.[state.username]?.wrappedKey ??
+    vault?.wrappedKey
+  );
 }
 
 function generateStrongPassword(length = 16) {

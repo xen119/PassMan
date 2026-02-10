@@ -34,6 +34,7 @@ function mapMemberWrappers(memberWrappers = []) {
     }
 
     map[userId] = {
+      identifier: userId,
       wrappedKey,
       role,
       status,
@@ -45,12 +46,27 @@ function mapMemberWrappers(memberWrappers = []) {
   return map;
 }
 
-function hasSharedAccess(vault, userId) {
-  const member = vault?.memberKeys?.[userId];
-  if (!member) {
+function findMemberEntry(vault, { userId, username }) {
+  const members = vault?.memberKeys || {};
+  for (const [key, info] of Object.entries(members)) {
+    if (
+      key === userId ||
+      key === username ||
+      info.identifier === userId ||
+      info.identifier === username
+    ) {
+      return { key, info };
+    }
+  }
+  return null;
+}
+
+function hasSharedAccess(vault, identity) {
+  const entry = findMemberEntry(vault, identity);
+  if (!entry) {
     return false;
   }
-  return member.status === 'active' || member.status === 'invited';
+  return entry.info.status === 'active' || entry.info.status === 'invited';
 }
 
 const app = express();

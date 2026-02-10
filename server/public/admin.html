@@ -143,13 +143,43 @@
         return response.json();
       };
 
-      const randomBase64 = (length = 24) => {
+      const textEncoder = new TextEncoder();
+
+      const arrayBufferToBase64 = (buffer) => {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        bytes.forEach((b) => (binary += String.fromCharCode(b)));
+        return btoa(binary);
+      };
+
+      const base64ToArrayBuffer = (base64) => {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+      };
+
+      const randomBase64 = (length = 12) => {
         const bytes = new Uint8Array(length);
         crypto.getRandomValues(bytes);
-        let str = '';
-        bytes.forEach((b) => (str += String.fromCharCode(b)));
-        return btoa(str);
+        return arrayBufferToBase64(bytes);
       };
+
+      const encryptJson = async (payload, key) => {
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const data = textEncoder.encode(JSON.stringify(payload));
+        const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+        return {
+          ciphertext: arrayBufferToBase64(cipher),
+          iv: arrayBufferToBase64(iv),
+        };
+      };
+
+      const generateSharedKey = () => crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+
+      const exportKeyBase64 = (key) => crypto.subtle.exportKey('raw', key).then((raw) => arrayBufferToBase64(raw));
 
       function App() {
         const [token, setToken] = useState('');
@@ -209,12 +239,23 @@
             setStatus('JWT required.');
             return;
           }
+          if (!members.some((member) => member.userId.trim())) {
+            setStatus('At least one member is required.');
+            return;
+          }
+
+          const sharedKey = await generateSharedKey();
+          const sharedKeyBase64 = await exportKeyBase64(sharedKey);
+          const encryptedPayload = await encryptJson([], sharedKey);
+
           const wrappers = members
             .filter((member) => member.userId.trim())
             .map((member) => ({
               userId: member.userId.trim(),
-              wrappedKey: randomBase64(32),
+              wrappedKey: sharedKeyBase64,
               role: member.role,
+              status: 'active',
+              invitedBy: 'admin-ui',
             }));
           if (!wrappers.length) {
             setStatus('At least one member is required.');
@@ -222,9 +263,9 @@
           }
           const payload = {
             name: name.trim(),
-            encryptedVault: randomBase64(32),
-            iv: randomBase64(12),
-            salt: randomBase64(16),
+            encryptedVault: encryptedPayload.ciphertext,
+            iv: encryptedPayload.iv,
+            salt: sharedKeyBase64,
             memberWrappers: wrappers,
           };
           try {
