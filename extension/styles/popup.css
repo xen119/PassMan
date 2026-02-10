@@ -17,6 +17,7 @@
 }
 
 body {
+  overflow: hidden;
   margin: 0;
   min-height: 100vh;
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -322,20 +323,19 @@ button:active {
   max-height: 140px;
   overflow-y: auto;
 }
-
 .shared-vault-item {
   border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: 12px;
-  padding: 0.55rem 0.75rem;
+  padding: 0.35rem 0.6rem;
   background: rgba(10, 14, 30, 0.85);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
+  gap: 0.5rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.shared-vault-item:hover {
+.shared-vault-item:hover,
+.shared-vault-item .shared-vault-item-main:focus-visible {
   border-color: rgba(99, 102, 241, 0.6);
   box-shadow: 0 10px 20px rgba(9, 12, 28, 0.45);
 }
@@ -345,14 +345,43 @@ button:active {
   box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35);
 }
 
+.shared-vault-item-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0.3rem;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.shared-vault-item-main:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.8);
+  outline-offset: 2px;
+}
+
 .shared-vault-item-meta {
   font-size: 0.72rem;
   color: var(--muted);
 }
 
-.shared-vault-item span {
-  font-size: 0.85rem;
-  color: var(--text);
+.shared-vault-item-delete {
+  padding: 0.3rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  background: rgba(248, 113, 113, 0.15);
+  color: #fecaca;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.shared-vault-item-delete:hover {
+  background: rgba(248, 113, 113, 0.25);
+  border-color: rgba(248, 113, 113, 0.8);
 }
 
 .shared-vault-empty {

@@ -156,6 +156,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return;
     }
 
+    const lookupHostname = credential.hostname || (() => {
+      try {
+        return new URL(credential.url).hostname;
+      } catch {
+        return '';
+      }
+    })();
+    const existingEntry = lookupHostname ? findEntryForHost(lookupHostname) : null;
+    if (existingEntry && existingEntry.password === credential.password) {
+      sendResponse({ stored: false });
+      return;
+    }
+
     const pending = {
       id: crypto.randomUUID?.() ?? String(Date.now()),
       label: credential.label ?? credential.hostname ?? 'New password',
@@ -165,6 +178,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       hostname: credential.hostname ?? '',
       otpSecret: credential.otpSecret ?? '',
       detectedAt: Date.now(),
+      existingEntryId: existingEntry?.id ?? null,
+      existingEntryLabel: existingEntry?.label ?? existingEntry?.url ?? null,
     };
 
     chrome.storage.local.set({ pendingSave: pending }, () => {

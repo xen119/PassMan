@@ -541,20 +541,38 @@ function renderSharedVaultList() {
   }
 
   state.sharedVaults.forEach((vault) => {
-    const item = document.createElement('button');
-    item.type = 'button';
+    const item = document.createElement('div');
     item.className = 'shared-vault-item';
     if (state.selectedSharedVaultId === vault.id) {
       item.classList.add('selected');
     }
 
+    const mainButton = document.createElement('button');
+    mainButton.type = 'button';
+    mainButton.className = 'shared-vault-item-main';
     const statusText = vault.status ? `${vault.status}` : vault.role ?? 'member';
-    item.innerHTML = `
+    mainButton.innerHTML = `
       <span>${escapeHtml(vault.name)}</span>
       <span class="shared-vault-item-meta">${escapeHtml(statusText)}</span>
     `;
+    mainButton.addEventListener('click', () =>
+      selectSharedVault(vault).catch((err) => setStatus(err.message, true))
+    );
+    item.appendChild(mainButton);
 
-    item.addEventListener('click', () => selectSharedVault(vault).catch((err) => setStatus(err.message, true)));
+    const isOwner = vault.ownerId === state.userId;
+    if (isOwner) {
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.className = 'shared-vault-item-delete';
+      deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        deleteSharedVault(vault.id, vault.name).catch((err) => setStatus(err.message, true));
+      });
+      item.appendChild(deleteButton);
+    }
+
     sharedVaultListEl.appendChild(item);
   });
 }
@@ -579,6 +597,50 @@ async function selectSharedVault(vault) {
   }
 
   await loadSharedVault(vaultId);
+}
+
+async function deleteSharedVault(vaultId, vaultName = '') {
+  if (!vaultId) {
+    return;
+  }
+
+  const vault = state.sharedVaults.find((entry) => entry.id === vaultId);
+  if (!vault) {
+    return;
+  }
+
+  if (vault.ownerId !== state.userId) {
+    setStatus('Only the owner can delete a shared vault', true);
+    return;
+  }
+
+  const confirmed = confirm(
+    `Delete shared vault "${vaultName || vault.name}" permanently? This cannot be undone.`
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  const wasSelected = state.selectedSharedVaultId === vaultId;
+  state.sharedVaults = state.sharedVaults.filter((entry) => entry.id !== vaultId);
+  if (wasSelected) {
+    state.selectedSharedVaultId = null;
+    state.activeSharedVault = null;
+  }
+  renderSharedVaultList();
+
+  try {
+    await apiRequest(`/shared-vaults/${vaultId}`, { method: 'DELETE' }, true);
+
+    if (wasSelected) {
+      await loadVault();
+    } else {
+      await fetchSharedVaults();
+    }
+    setStatus('Shared vault deleted');
+  } catch (error) {
+    setStatus(`Failed to delete shared vault: ${error.message}`, true);
+  }
 }
 
 async function fetchSharedVaults() {

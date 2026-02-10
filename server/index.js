@@ -325,6 +325,27 @@ app.post('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
     version: vault.version,
   });
 });
+
+app.delete('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
+  await ensureDb();
+  const vaultIndex = db.data.sharedVaults.findIndex((entry) => entry.id === req.params.vaultId);
+  if (vaultIndex === -1) {
+    return res.status(404).json({ error: 'Shared vault not found' });
+  }
+
+  const vault = db.data.sharedVaults[vaultIndex];
+  if (vault.ownerId !== req.user.userId) {
+    return res.status(403).json({ error: 'Only the owner can delete a shared vault' });
+  }
+
+  db.data.sharedVaults.splice(vaultIndex, 1);
+  await db.write();
+
+  res.json({
+    success: true,
+    deletedAt: new Date().toISOString(),
+  });
+});
 app.post('/vault', authMiddleware, async (req, res) => {
   await ensureDb();
   const { encryptedVault, iv, salt } = req.body;

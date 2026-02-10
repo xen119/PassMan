@@ -19,33 +19,49 @@ function fillField(input, value) {
   return true;
 }
 
-chrome.runtime.sendMessage(
-  { type: 'autofill-request', hostname: location.hostname },
-  (response) => {
-    if (!response?.found) {
+function safeSendMessage(message, callback) {
+  if (!chrome.runtime?.sendMessage) {
+    return;
+  }
+
+  const wrappedCallback = (response) => {
+    if (chrome.runtime?.lastError) {
       return;
     }
+    callback?.(response);
+  };
 
-    const entry = response.entry;
-    const usernameField = getCandidateInput([
-      'input[name*=user]',
-      'input[name*=email]',
-      'input[type=email]',
-      'input[type=text]',
-    ]);
-    const passwordField = getCandidateInput(['input[type=password]', 'input[name*=pass]']);
-    const otpField = getCandidateInput([
-      'input[name*=otp]',
-      'input[name*=token]',
-      'input[name*=code]',
-      'input[placeholder*=OTP]',
-    ]);
-
-    fillField(usernameField, entry.username);
-    fillField(passwordField, entry.password);
-    fillField(otpField, entry.otp);
+  try {
+    chrome.runtime.sendMessage(message, wrappedCallback);
+  } catch (err) {
+    // extension context may be invalidated, ignore
   }
-);
+}
+
+safeSendMessage({ type: 'autofill-request', hostname: location.hostname }, (response) => {
+  if (!response?.found) {
+    return;
+  }
+
+  const entry = response.entry;
+  const usernameField = getCandidateInput([
+    'input[name*=user]',
+    'input[name*=email]',
+    'input[type=email]',
+    'input[type=text]',
+  ]);
+  const passwordField = getCandidateInput(['input[type=password]', 'input[name*=pass]']);
+  const otpField = getCandidateInput([
+    'input[name*=otp]',
+    'input[name*=token]',
+    'input[name*=code]',
+    'input[placeholder*=OTP]',
+  ]);
+
+  fillField(usernameField, entry.username);
+  fillField(passwordField, entry.password);
+  fillField(otpField, entry.otp);
+});
 
 function gatherUsername(form) {
   const selectors = [
@@ -83,7 +99,7 @@ function onPasswordSubmit(event) {
     label: document.title,
   };
 
-  chrome.runtime.sendMessage({ type: 'password-detected', credential });
+  safeSendMessage({ type: 'password-detected', credential });
 }
 
 document.addEventListener('submit', onPasswordSubmit, true);

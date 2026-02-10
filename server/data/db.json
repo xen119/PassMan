@@ -11,63 +11,12 @@
     {
       "id": "MsB_0azrjGSNxcUcaUdYn",
       "userId": "aNfSwc9Kl7vNxBurGw42h",
-      "encryptedVault": "NQQwjDWrk7P0oOdLDTFqJ3TJnutKzuWuqpUJjqmtvex/4f3nnjQL9e17aI/7oWD4VhWDSJKIUVl9ltYQpXVOtfQze4J9Xi37lRjyYjiDkbn/mxeN+NHZXXC4Doszmf0dJmqi6fAJZ462JSsCa7FCLVLqRaKPvt1II7trp+SNLBU8ijAfW5xRH4KMvhB+lmBidWoHFP4LuDhB+G+e2y4/9Bn7sv48IzQBRC8MbvnBkzIIAh9WPC1FHjkDDVA4tWPFvIZgr9NPYy1XShHnpBBmKlljayTG23Wdw7P1MnT94hHFKm+qwP0ONFD/1qo+AVKZyKUCiNyPyEOvV5KWgTHu0SWtSNjBLy5qRsdX8k38KDYFGCdyItP0bLD/2yNkn4bU8/8d+BMTillLPmh7VQswFeLoR43VASB8tBqo9DZV14Wwo972fNXXtapunq8/kVWonQeMSbnC86zSkHrdxo0ia5YFGpoHfamoe5MruaIW7IXGrhsnR8w1X1vvT9c5ZRSeBt1l+XCuB0pNQ+SeyBbom+MUha7Cdg+A6EMeXVXt+YJdlmRwCnuTHf55mi4U8Ue5mh9pMv2EDfm4S+s6s0cTxK6BYJsVLo4xw8cv6IBbny7AbVHCb1EFET8Ug6W2Rf9yZV/SHYj2rc3Ssi8H/0oHvMsYAJxo7Igzj1FzGojDWZtS76e+vZyRryN4WTrGvD8dHFG7CVYz/E3YrMgPLK0D1Xj6Tek2X1MPa2+1o5wlrWZ6Zs5I7TQx48dy/+Z5THQjjwPxDkvIfLg33AtvoP35DQ0IVkluXQrBmWSOYrlz+u3z0so1WAfw63fABw4mf9Q8mi1/XoSa/UvNyxV4qTA3XanI/MObnDgBt9ecEasR4AzyDjWHdS4KhCz+fcr5se30zKj/aKIxSOFr/DkeC2offdGNc6Sah0bhE7mGqw==",
-      "iv": "ZGjhKr9FdxCZ2eOJ",
+      "encryptedVault": "xbT4BgSQvZGaJA2jSkhfEOxZ2mmNV7M8P743HOT50KaKbvSlNeNQTtoEmp+2fzmUM5UHwtulzBiHifPa5hzNagNsj348kSNcpwrbn15RRtJHNLrTA2o3HfJZgBxWbk0ug/4p9Rzvw6AJjvZx52RvWelwPlgibO7hZ5XYiQU4EBiTrAD/4At2/gL80JajvON54ZMF0E+pzgTVpRUrEHUeXDeNMiGtwGDcUNO2B2luMIuv+7T3GiDPgTtIMkWBkU7aJYct//48+rVHg+zjVaRDyC8Qv/Rpq695RicuanEiZz5nGm7alzTDvGLpinjtdw10LyxDe/nmE1MLXi0Va5i2v/ouOYeWgiBTviMnau7bUHHbhOWvVGi6gTtmVo4EQTFIwYXDgucgF0SFqj7sFIoKk6qKjgEh+tak0tz4j3HqyS962UYMe8AQHJ8Ewk7BmP3+Y3onLroy/b1+lwltWpx334vQqjKjKggclkgLmtL//MfLNuBtQO4tDxqPKqvbd9rr+s2SeIBGTtgnriVwkBOkOE7IN9Lvm2eky9Y/h/Vd6C+dc7VjFGipaykbJ6pT7ibbenuN2QPVVwQ5qIUjNHC/5CJVPe5F4hsrEnLzvA+lXYuRRbHRGhZbX9p/4t1vRJ1FjvYamMvgmIoTdu9NO+wSB4QjFL8miYMbjtj2fFXRZDD3POxvpsBRVX1j+rtzJ6YQAmggZgSIs3XIKyKEMPNMd6nrOpKo4D15Yude67BM2RUdyThRX0RbqyYmWaF7seA51L8MUgtSsFi1UhZyGGIO4a0qgkMo5Z1a",
+      "iv": "GZxNb4D+lU+S+zGE",
       "salt": "h4diCMOr3YBNcaWPeSJ4aQ==",
-      "version": 17,
-      "updatedAt": "2026-02-10T20:51:48.740Z"
+      "version": 19,
+      "updatedAt": "2026-02-10T21:44:27.743Z"
     }
   ],
-  "sharedVaults": [
-    {
-      "id": "-pJ-rZ0GoM5vauzIoWeb-",
-      "name": "Team Vault",
-      "ownerId": "aNfSwc9Kl7vNxBurGw42h",
-      "encryptedVault": "1kEmodwXQrzt4VyQpjUPaBippAf/+sWCGkWamV3r1Ts=",
-      "iv": "B6PHiv76Bb1//xDD",
-      "salt": "fYA0b8IsRgAy/rJdNaFaCQ==",
-      "version": 1,
-      "updatedAt": "2026-02-10T12:54:23.118Z",
-      "memberKeys": {
-        "dnefdt": {
-          "wrappedKey": "A7ZVmIAB3t43PsZcNfRR8C3hpDIxjFozJ7TRbPtgGPc=",
-          "role": "member",
-          "status": "active",
-          "invitedAt": "2026-02-10T12:54:23.113Z"
-        },
-        "aNfSwc9Kl7vNxBurGw42h": {
-          "wrappedKey": "A7ZVmIAB3t43PsZcNfRR8C3hpDIxjFozJ7TRbPtgGPc=",
-          "role": "owner",
-          "status": "active",
-          "invitedBy": "aNfSwc9Kl7vNxBurGw42h",
-          "invitedAt": "2026-02-10T12:54:23.113Z"
-        }
-      }
-    },
-    {
-      "id": "K8pLYGqNislWIqZVfOt7S",
-      "name": "Team Vault 2",
-      "ownerId": "aNfSwc9Kl7vNxBurGw42h",
-      "encryptedVault": "N9viBzHLV3+OSjVoHWVeSFc58ANAU5q722DdDlz8Mig=",
-      "iv": "Miqpou8cF9cE7GPp",
-      "salt": "kyYS4jI7fFxInyUxLURygA==",
-      "version": 1,
-      "updatedAt": "2026-02-10T13:15:36.034Z",
-      "memberKeys": {
-        "dnefdt": {
-          "wrappedKey": "9u55HDoBX+iecomtDljTsK6Ye+ZIUuVOtfKij6Gy86U=",
-          "role": "member",
-          "status": "active",
-          "invitedAt": "2026-02-10T13:15:36.034Z"
-        },
-        "aNfSwc9Kl7vNxBurGw42h": {
-          "wrappedKey": "9u55HDoBX+iecomtDljTsK6Ye+ZIUuVOtfKij6Gy86U=",
-          "role": "owner",
-          "status": "active",
-          "invitedBy": "aNfSwc9Kl7vNxBurGw42h",
-          "invitedAt": "2026-02-10T13:15:36.034Z"
-        }
-      }
-    }
-  ]
+  "sharedVaults": []
 }
