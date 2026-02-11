@@ -18,7 +18,19 @@
           <button id="logout-btn" class="logout-arrow-btn" aria-label="Log out">→</button>
         </div>
       </header>
-      <div id="selected-vault-name" class="selected-vault-name" hidden></div>
+      <div id="vault-selector-row" class="vault-selector-row" hidden>
+        <button
+          type="button"
+          id="vault-modal-toggle"
+          class="burger-btn"
+          aria-label="Open vault selector"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <span id="selected-vault-name" class="selected-vault-name" hidden></span>
+      </div>
 
       <div class="popup-body">
         <div id="status" class="status" role="alert" aria-live="polite"></div>
@@ -53,19 +65,6 @@
         </section>
 
         <section id="vault-section" hidden>
-          <div class="vault-toolbar">
-            <button
-              type="button"
-              id="vault-modal-toggle"
-              class="burger-btn"
-              aria-label="Open vault selector"
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-            <p>Manage shared vaults and switch contexts</p>
-          </div>
           <div class="vault-main">
 
             <div class="auto-lock-settings">

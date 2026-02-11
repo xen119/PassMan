@@ -465,18 +465,11 @@ button:active {
   margin: 0.35rem 0;
 }
 
-.vault-toolbar {
+.vault-selector-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.5rem 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.vault-toolbar p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .burger-btn {

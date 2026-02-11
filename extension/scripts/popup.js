@@ -61,6 +61,7 @@ const sharedVaultEditorCancel = document.getElementById('shared-vault-editor-can
 const vaultModal = document.getElementById('vault-modal');
 const vaultModalToggle = document.getElementById('vault-modal-toggle');
 const vaultModalClose = document.getElementById('vault-modal-close');
+const vaultSelectorRow = document.getElementById('vault-selector-row');
 const personalVaultButton = document.getElementById('personal-vault-btn');
 const scanOtpButton = document.getElementById('scan-otp-btn');
 const headerUserEl = document.querySelector('.header-user');
@@ -563,8 +564,10 @@ function updateView() {
   if (headerUserEl) {
     headerUserEl.hidden = !signedIn;
   }
+  if (vaultSelectorRow) {
+    vaultSelectorRow.hidden = !signedIn;
+  }
   renderSharedVaultList();
-  updateSelectedVaultName();
   updateSelectedVaultName();
 }
 
