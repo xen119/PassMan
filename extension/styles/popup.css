@@ -117,11 +117,11 @@ header p {
 }
 
 .selected-vault-name {
+  flex: 1;
   font-size: 1.1rem;
   font-weight: 600;
   color: #f1f5f9;
-  text-align: left;
-  margin-top: 0.35rem;
+  text-align: center;
   text-transform: capitalize;
 }
 
