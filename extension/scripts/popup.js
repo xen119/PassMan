@@ -1050,9 +1050,12 @@ function renderEntries() {
             <strong>${label}</strong>
             <div class="entry-row-actions">
               <button type="button" data-action="copy">Copy</button>
-              <button type="button" data-action="edit">Edit</button>
-              <button type="button" data-action="delete">Delete</button>
-            </div>
+              <button type="button" data-action="auto-signin" class="${entry.autoSignIn ? 'active' : ''}">
+                Auto-sign in ${entry.autoSignIn ? '• on' : ''}
+              </button>
+          <button type="button" data-action="edit">Edit</button>
+          <button type="button" data-action="delete">Delete</button>
+        </div>
           </div>
           <div><span>Username:</span> ${username}</div>
           <div>
@@ -1306,15 +1309,16 @@ entryForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  const entryPayload = {
-    label,
-    username: entryUsername.value.trim(),
-    password: entryPassword.value,
-    notes: entryNotes.value.trim(),
-    url: entryUrl.value.trim(),
-    otpSecret: entryOtpSecret.value.trim(),
-    updatedAt: new Date().toISOString(),
-  };
+    const entryPayload = {
+      label,
+      username: entryUsername.value.trim(),
+      password: entryPassword.value,
+      notes: entryNotes.value.trim(),
+      url: entryUrl.value.trim(),
+      otpSecret: entryOtpSecret.value.trim(),
+      autoSignIn: entry.autoSignIn ?? false,
+      updatedAt: new Date().toISOString(),
+    };
 
   if (state.editingEntryId) {
     entryPayload.id = state.editingEntryId;
@@ -1369,6 +1373,14 @@ entriesEl.addEventListener('click', async (event) => {
   }
 
   if (action === 'reveal') {
+    return;
+  }
+
+  if (action === 'auto-signin') {
+    entry.autoSignIn = !entry.autoSignIn;
+    renderEntries();
+    persistVault().catch((error) => setStatus(`Failed to update auto sign-in: ${error.message}`, true));
+    setStatus(entry.autoSignIn ? 'Auto sign-in enabled for this entry' : 'Auto sign-in disabled for this entry');
     return;
   }
 

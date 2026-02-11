@@ -38,7 +38,7 @@ function safeSendMessage(message, callback) {
   }
 }
 
-safeSendMessage({ type: 'autofill-request', hostname: location.hostname }, (response) => {
+  safeSendMessage({ type: 'autofill-request', hostname: location.hostname }, (response) => {
   if (!response?.found) {
     return;
   }
@@ -48,6 +48,8 @@ safeSendMessage({ type: 'autofill-request', hostname: location.hostname }, (resp
     'input[name*=user]',
     'input[name*=email]',
     'input[type=email]',
+    'input[name*=login]',
+    'input[name*=name]',
     'input[type=text]',
   ]);
   const passwordField = getCandidateInput(['input[type=password]', 'input[name*=pass]']);
@@ -61,6 +63,19 @@ safeSendMessage({ type: 'autofill-request', hostname: location.hostname }, (resp
   fillField(usernameField, entry.username);
   fillField(passwordField, entry.password);
   fillField(otpField, entry.otp);
+
+  if (entry.autoSignIn && passwordField) {
+    const form = passwordField.closest('form') || passwordField.form;
+    if (form instanceof HTMLFormElement) {
+      setTimeout(() => {
+        if (form.requestSubmit) {
+          form.requestSubmit();
+        } else {
+          form.submit();
+        }
+      }, 200);
+    }
+  }
 });
 
 function gatherUsername(form) {

@@ -185,6 +185,10 @@
         const [token, setToken] = useState('');
         const [vaults, setVaults] = useState([]);
         const [selected, setSelected] = useState(null);
+        const [sessionUserId, setSessionUserId] = useState('');
+        const [isEditingVault, setIsEditingVault] = useState(false);
+        const [editName, setEditName] = useState('');
+        const [editMembers, setEditMembers] = useState([]);
         const [status, setStatus] = useState('Paste a JWT and load shared vaults.');
         const [name, setName] = useState('');
         const [members, setMembers] = useState([{ userId: '', role: 'member' }]);
@@ -220,6 +224,7 @@
             setToken(payload.token);
             setStatus(`Logged in as ${payload.user?.username ?? loginUsername.trim()}`);
             setLoginPassword('');
+            setSessionUserId(payload.user?.id ?? '');
           } catch (err) {
             setStatus(err.message);
           } finally {
@@ -242,12 +247,97 @@
           }
         };
 
+        const createEditMember = (member = {}) => ({
+          identifier: member.identifier ?? member.userId ?? '',
+          role: member.role ?? 'member',
+          status: member.status ?? 'active',
+        });
+
+        const addEditMember = () => {
+          setEditMembers((prev) => [...prev, createEditMember()]);
+        };
+
+        const updateEditMember = (index, field, value) => {
+          setEditMembers((prev) =>
+            prev.map((member, idx) => (idx === index ? { ...member, [field]: value } : member))
+          );
+        };
+
+        const removeEditMember = (index) => {
+          setEditMembers((prev) => prev.filter((_, idx) => idx !== index));
+        };
+
+        const handleSaveVaultChanges = async () => {
+          if (!selected) {
+            return;
+          }
+
+          if (!editName.trim()) {
+            setStatus('Vault name is required');
+            return;
+          }
+
+          const memberWrappers = editMembers
+            .map((member) => ({
+              userId: member.identifier.trim(),
+              role: member.role,
+              status: member.status,
+            }))
+            .filter((member) => member.userId);
+
+          try {
+            await fetchJson(
+              `/shared-vaults/${selected.id}`,
+              {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({
+                  name: editName.trim(),
+                  memberWrappers,
+                }),
+              }
+            );
+            setStatus('Shared vault updated');
+            setIsEditingVault(false);
+            await loadVaults();
+            await selectVault(selected.id);
+          } catch (err) {
+            setStatus(err.message);
+          }
+        };
+
+        const handleDeleteVault = async () => {
+          if (!selected) {
+            return;
+          }
+
+          if (!confirm(`Delete vault "${selected.name}" permanently?`)) {
+            return;
+          }
+
+          try {
+            await fetchJson(`/shared-vaults/${selected.id}`, {
+              method: 'DELETE',
+              headers,
+            });
+            setStatus('Shared vault deleted');
+            setSelected(null);
+            setIsEditingVault(false);
+            await loadVaults();
+          } catch (err) {
+            setStatus(err.message);
+          }
+        };
+
         const selectVault = async (vaultId) => {
           if (!token) return;
           setStatus('Loading vault...');
           try {
             const payload = await fetchJson(`/shared-vaults/${vaultId}`, { headers });
             setSelected(payload.vault);
+            setIsEditingVault(false);
+            setEditName(payload.vault?.name ?? '');
+            setEditMembers(payload.vault?.members ?? []);
             setStatus(`Vault "${payload.vault.name}" loaded.`);
           } catch (err) {
             setStatus(err.message);
@@ -317,92 +407,94 @@
           setToken('');
           setVaults([]);
           setSelected(null);
+          setSessionUserId('');
           setStatus('Signed out');
         };
 
-        const managerPanels = React.createElement(
-          React.Fragment,
-          null,
+        const sessionPanel = React.createElement(
+          'div',
+          { className: 'panel' },
+          React.createElement('h2', null, 'Session'),
+          React.createElement('p', null, 'JWT captured automatically.'),
+          React.createElement('textarea', {
+            rows: 3,
+            readOnly: true,
+            value: token,
+          }),
           React.createElement(
-            'div',
-            { className: 'panel' },
-            React.createElement('h2', null, 'Session'),
-            React.createElement('p', null, 'JWT captured automatically.'),
-            React.createElement('textarea', {
-              rows: 3,
-              readOnly: true,
-              value: token,
-            }),
-            React.createElement(
-              'button',
-              {
-                type: 'button',
-                onClick: handleLogout,
-                style: { marginTop: '0.5rem' },
-              },
-              'Log out'
-            ),
-            React.createElement('p', { className: 'status' }, status)
+            'button',
+            {
+              type: 'button',
+              onClick: handleLogout,
+              style: { marginTop: '0.5rem' },
+            },
+            'Log out'
           ),
-          React.createElement(
-            'div',
-            { className: 'panel' },
-            React.createElement('h2', null, 'Vaults'),
-            vaults.length
-              ? React.createElement(
-                  'div',
-                  { className: 'vault-list' },
-                  vaults.map((vault) =>
-                    React.createElement(
-                      'div',
-                      {
-                        key: vault.id,
-                        className: `vault-card ${selected?.id === vault.id ? 'active' : ''}`,
-                        onClick: () => selectVault(vault.id),
-                      },
-                      React.createElement('strong', null, vault.name || vault.id),
-                      React.createElement('div', null, `${vault.role} • ${vault.status}`)
-                    )
+          React.createElement('p', { className: 'status' }, status)
+        );
+
+        const vaultListPanel = React.createElement(
+          'div',
+          { className: 'panel' },
+          React.createElement('h2', null, 'Vaults'),
+          vaults.length
+            ? React.createElement(
+                'div',
+                { className: 'vault-list' },
+                vaults.map((vault) =>
+                  React.createElement(
+                    'div',
+                    {
+                      key: vault.id,
+                      className: `vault-card ${selected?.id === vault.id ? 'active' : ''}`,
+                      onClick: () => selectVault(vault.id),
+                    },
+                    React.createElement('strong', null, vault.name || vault.id),
+                    React.createElement('div', null, `${vault.role} • ${vault.status}`)
                   )
                 )
-              : React.createElement('p', null, 'No shared vaults yet.')
-          ),
-          React.createElement(
-            'div',
-            { className: 'panel' },
-            React.createElement('h2', null, 'Create Shared Vault'),
-            React.createElement('label', null, 'Name'),
-            React.createElement('input', {
-              placeholder: 'e.g. Team vault',
-              value: name,
-              onChange: (event) => setName(event.target.value),
-            }),
-            React.createElement('div', { className: 'member-grid' }, members.map((member, idx) =>
-              React.createElement(
-                'div',
-                { key: idx },
-                React.createElement('label', null, `Member ${idx + 1}`),
-                React.createElement('input', {
-                  placeholder: 'User ID / username',
-                  value: member.userId,
-                  onChange: (event) => updateMember(idx, 'userId', event.target.value),
-                }),
-                React.createElement('select', {
-                  value: member.role,
-                  onChange: (event) => updateMember(idx, 'role', event.target.value),
-                },
-                  React.createElement('option', { value: 'member' }, 'Member (edit)'),
-                  React.createElement('option', { value: 'viewer' }, 'Viewer (read-only)')
-                )
               )
-            )),
-            React.createElement('button', { onClick: addMember, className: 'secondary' }, 'Add another member'),
-            React.createElement('div', { style: { marginTop: '0.75rem' } },
-              React.createElement('button', { onClick: createVault }, 'Create vault')
-            )
-          ),
-          selected &&
+            : React.createElement('p', null, 'No shared vaults yet.')
+        );
+
+        const createPanel = React.createElement(
+          'div',
+          { className: 'panel' },
+          React.createElement('h2', null, 'Create Shared Vault'),
+          React.createElement('label', null, 'Name'),
+          React.createElement('input', {
+            placeholder: 'e.g. Team vault',
+            value: name,
+            onChange: (event) => setName(event.target.value),
+          }),
+          React.createElement('div', { className: 'member-grid' }, members.map((member, idx) =>
             React.createElement(
+              'div',
+              { key: idx },
+              React.createElement('label', null, `Member ${idx + 1}`),
+              React.createElement('input', {
+                placeholder: 'User ID / username',
+                value: member.userId,
+                onChange: (event) => updateMember(idx, 'userId', event.target.value),
+              }),
+              React.createElement('select', {
+                value: member.role,
+                onChange: (event) => updateMember(idx, 'role', event.target.value),
+              },
+                React.createElement('option', { value: 'member' }, 'Member (edit)'),
+                React.createElement('option', { value: 'viewer' }, 'Viewer (read-only)')
+              )
+            )
+          )),
+          React.createElement('button', { onClick: addMember, className: 'secondary' }, 'Add another member'),
+          React.createElement('div', { style: { marginTop: '0.75rem' } },
+            React.createElement('button', { onClick: createVault }, 'Create vault')
+          )
+        );
+
+        const isOwner = selected?.ownerId === sessionUserId;
+        const selectedPanel = selected
+          ? React.createElement(
               'div',
               { className: 'panel' },
               React.createElement('h2', null, 'Selected Vault'),
@@ -413,17 +505,103 @@
                 'div',
                 { className: 'members' },
                 (selected.members || []).map((member) =>
-                React.createElement(
-                  'span',
-                  {
-                    key: member.identifier ?? member.userId,
-                    className: `member-chip ${member.role === 'viewer' ? 'viewer' : ''}`,
-                  },
-                  `${member.identifier ?? member.userId ?? 'unknown'} (${member.role})`
+                  React.createElement(
+                    'span',
+                    {
+                      key: member.identifier ?? member.userId,
+                      className: `member-chip ${member.role === 'viewer' ? 'viewer' : ''}`,
+                    },
+                    `${member.identifier ?? member.userId ?? 'unknown'} (${member.role})`
+                  )
                 )
+              ),
+              isOwner &&
+                React.createElement(
+                  'div',
+                  { style: { display: 'flex', gap: '0.5rem', marginTop: '0.75rem' } },
+                  React.createElement(
+                    'button',
+                    {
+                      type: 'button',
+                      onClick: () => setIsEditingVault(!isEditingVault),
+                      className: 'secondary',
+                    },
+                    isEditingVault ? 'Cancel edit' : 'Edit vault'
+                  ),
+                  React.createElement(
+                    'button',
+                    {
+                      type: 'button',
+                      onClick: handleDeleteVault,
+                      className: 'secondary',
+                      style: { borderColor: 'rgba(248, 113, 113, 0.6)', color: '#fecaca' },
+                    },
+                    'Delete vault'
+                  )
+                )
+            )
+          : null;
+
+        const editorPanel =
+          selected && isOwner && isEditingVault
+            ? React.createElement(
+                'div',
+                { className: 'panel' },
+                React.createElement('h2', null, 'Edit shared vault'),
+                React.createElement('label', null, 'Name'),
+                React.createElement('input', {
+                  value: editName,
+                  onChange: (event) => setEditName(event.target.value),
+                }),
+                React.createElement('div', { className: 'member-grid' }, editMembers.map((member, idx) =>
+                  React.createElement(
+                    'div',
+                    { key: idx, style: { display: 'grid', gap: '0.3rem', marginBottom: '0.4rem' } },
+                    React.createElement('label', null, `Member ${idx + 1}`),
+                    React.createElement('input', {
+                      placeholder: 'User ID / username',
+                      value: member.identifier,
+                      onChange: (event) => updateEditMember(idx, 'identifier', event.target.value),
+                    }),
+                    React.createElement(
+                      'select',
+                      {
+                        value: member.role,
+                        onChange: (event) => updateEditMember(idx, 'role', event.target.value),
+                        disabled: member.role === 'owner',
+                      },
+                      React.createElement('option', { value: 'owner' }, 'Owner'),
+                      React.createElement('option', { value: 'admin' }, 'Admin'),
+                      React.createElement('option', { value: 'member' }, 'Member (edit)'),
+                      React.createElement('option', { value: 'viewer' }, 'Viewer (read-only)')
+                    ),
+                    member.role !== 'owner' &&
+                      React.createElement('button', {
+                        type: 'button',
+                        onClick: () => removeEditMember(idx),
+                        className: 'secondary',
+                        style: { borderColor: 'rgba(248, 113, 113, 0.6)', color: '#fecaca' },
+                      }, 'Remove')
+                  )
+                )),
+                React.createElement('button', { onClick: addEditMember, className: 'secondary' }, 'Add another member'),
+                React.createElement(
+                  'div',
+                  { style: { display: 'flex', gap: '0.5rem', marginTop: '1rem' } },
+                  React.createElement('button', { onClick: handleSaveVaultChanges, className: 'primary' }, 'Save changes'),
+                  React.createElement('button', { onClick: () => setIsEditingVault(false), className: 'secondary' }, 'Close')
                 )
               )
-            )
+            : null;
+
+        const managerPanels = React.createElement(
+          React.Fragment,
+          null,
+          sessionPanel,
+          vaultListPanel,
+          createPanel,
+          selectedPanel,
+          editorPanel
         );
 
         return React.createElement(
