@@ -400,6 +400,78 @@ button:active {
   color: var(--muted);
 }
 
+.shared-vault-editor {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 14px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.shared-vault-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.shared-vault-editor-header strong {
+  font-size: 0.9rem;
+}
+
+.shared-vault-editor-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.shared-vault-members {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.shared-vault-member-row {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr auto;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.shared-vault-member-row input {
+  padding: 0.45rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(2, 6, 23, 0.7);
+  color: var(--text);
+}
+
+.shared-vault-member-row select {
+  padding: 0.45rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(2, 6, 23, 0.7);
+  color: var(--text);
+}
+
+.shared-vault-member-row button {
+  border-radius: 10px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  background: transparent;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+}
+
+.shared-vault-editor-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
 .entry-cta {
   display: flex;
   align-items: center;

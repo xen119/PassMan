@@ -26,15 +26,19 @@ async function ensureDb() {
   db.data.sharedVaults ||= [];
 }
 
-function mapMemberWrappers(memberWrappers = []) {
+function mapMemberWrappers(memberWrappers = [], users = []) {
   const map = {};
   memberWrappers.forEach(({ userId, wrappedKey, role = 'member', status = 'active', invitedBy }) => {
     if (!userId || !wrappedKey) {
       return;
     }
 
-    map[userId] = {
-      identifier: userId,
+    const resolvedUser = users.find((user) => user.id === userId || user.username === userId);
+    const resolvedId = resolvedUser?.id ?? userId;
+    const identifier = resolvedUser?.username ?? userId;
+
+    map[resolvedId] = {
+      identifier,
       wrappedKey,
       role,
       status,
@@ -191,7 +195,8 @@ app.get('/shared-vaults', authMiddleware, async (req, res) => {
   const sharedVaults = Array.isArray(db.data.sharedVaults) ? db.data.sharedVaults : [];
   const shared = sharedVaults
     .map((vault) => {
-      if (!hasSharedAccess(vault, req.user.userId)) {
+      const identity = { userId: req.user.userId, username: req.user.username };
+      if (!hasSharedAccess(vault, identity)) {
         return null;
       }
       const entry = findMemberEntry(vault, {
@@ -220,7 +225,8 @@ app.get('/shared-vaults', authMiddleware, async (req, res) => {
 app.get('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
   await ensureDb();
   const vault = db.data.sharedVaults.find((entry) => entry.id === req.params.vaultId);
-  if (!vault || !hasSharedAccess(vault, req.user.userId)) {
+  const identity = { userId: req.user.userId, username: req.user.username };
+  if (!vault || !hasSharedAccess(vault, identity)) {
     return res.status(404).json({ error: 'Shared vault not found' });
   }
 
@@ -261,7 +267,7 @@ app.post('/shared-vaults', authMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'name, encryptedVault, iv, salt, and memberWrappers are required' });
   }
 
-  const memberMap = mapMemberWrappers(memberWrappers);
+  const memberMap = mapMemberWrappers(memberWrappers, db.data.users);
   if (!memberMap[req.user.userId]) {
     memberMap[req.user.userId] = {
       wrappedKey: memberWrappers[0]?.wrappedKey ?? '',
@@ -269,6 +275,7 @@ app.post('/shared-vaults', authMiddleware, async (req, res) => {
       status: 'active',
       invitedBy: req.user.userId,
       invitedAt: new Date().toISOString(),
+      identifier: req.user.username ?? req.user.userId,
     };
   }
 
@@ -302,7 +309,7 @@ app.post('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
   }
 
   const vault = db.data.sharedVaults.find((entry) => entry.id === req.params.vaultId);
-  if (!vault || !hasSharedAccess(vault, req.user.userId)) {
+  if (!vault || !hasSharedAccess(vault, { userId: req.user.userId, username: req.user.username })) {
     return res.status(404).json({ error: 'Shared vault not found' });
   }
 
@@ -313,10 +320,60 @@ app.post('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
   vault.updatedAt = new Date().toISOString();
 
   if (Array.isArray(memberWrappers) && memberWrappers.length) {
-    const wrappers = mapMemberWrappers(memberWrappers);
+    const wrappers = mapMemberWrappers(memberWrappers, db.data.users);
     vault.memberKeys = { ...vault.memberKeys, ...wrappers };
   }
 
+  await db.write();
+
+  res.json({
+    success: true,
+    updatedAt: vault.updatedAt,
+    version: vault.version,
+  });
+});
+
+app.patch('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
+  await ensureDb();
+  const { name, memberWrappers } = req.body;
+  const vault = db.data.sharedVaults.find((entry) => entry.id === req.params.vaultId);
+  if (!vault) {
+    return res.status(404).json({ error: 'Shared vault not found' });
+  }
+
+  if (vault.ownerId !== req.user.userId) {
+    return res.status(403).json({ error: 'Only the owner can edit a shared vault' });
+  }
+
+  if (name !== undefined) {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return res.status(400).json({ error: 'Vault name cannot be empty' });
+    }
+    vault.name = trimmed;
+  }
+
+  if (Array.isArray(memberWrappers)) {
+    const wrappers = mapMemberWrappers(memberWrappers, db.data.users);
+    if (!wrappers[req.user.userId]) {
+      wrappers[req.user.userId] = {
+        wrappedKey:
+          vault.memberKeys?.[req.user.userId]?.wrappedKey ??
+          vault.memberKeys?.[req.user.username]?.wrappedKey ??
+          vault.salt ??
+          '',
+        role: 'owner',
+        status: 'active',
+        invitedBy: req.user.userId,
+        invitedAt: new Date().toISOString(),
+        identifier: req.user.username ?? req.user.userId,
+      };
+    }
+    vault.memberKeys = wrappers;
+  }
+
+  vault.updatedAt = new Date().toISOString();
+  vault.version = (vault.version ?? 0) + 1;
   await db.write();
 
   res.json({

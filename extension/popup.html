@@ -81,10 +81,26 @@
             <div class="shared-vaults-header">
               <h3>Shared vaults</h3>
               <p>Select a vault to start sharing entries with your team.</p>
+              <button type="button" id="shared-vault-edit-btn" class="secondary" hidden>Edit vault</button>
             </div>
             <div id="shared-vault-status" class="shared-vault-status"></div>
             <div id="shared-vault-list" class="shared-vault-list"></div>
             <p id="shared-vault-empty" class="shared-vault-empty">No shared vaults yet.</p>
+            <div id="shared-vault-editor" class="shared-vault-editor" hidden>
+              <div class="shared-vault-editor-header">
+                <strong>Edit team vault</strong>
+                <p>Only the owner can rename and manage members.</p>
+              </div>
+              <label for="shared-vault-name">Vault name</label>
+              <input id="shared-vault-name" />
+              <label>Members</label>
+              <div id="shared-vault-members" class="shared-vault-members"></div>
+              <button type="button" id="shared-vault-add-member" class="secondary">Add member</button>
+              <div class="shared-vault-editor-actions">
+                <button type="button" id="shared-vault-editor-cancel" class="secondary">Cancel</button>
+                <button type="button" id="shared-vault-editor-save" class="primary">Save changes</button>
+              </div>
+            </div>
           </div>
 
           <div id="entries" class="entries"></div>

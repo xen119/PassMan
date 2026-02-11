@@ -134,14 +134,14 @@
     <script>
       const { useState, useEffect } = React;
 
-      const fetchJson = async (path, options = {}) => {
-        const response = await fetch(path, options);
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.error || 'Request failed');
-        }
-        return response.json();
-      };
+        const fetchJson = async (path, options = {}) => {
+          const response = await fetch(path, options);
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.error || 'Request failed');
+          }
+          return response.json();
+        };
 
       const textEncoder = new TextEncoder();
 
@@ -188,6 +188,9 @@
         const [status, setStatus] = useState('Paste a JWT and load shared vaults.');
         const [name, setName] = useState('');
         const [members, setMembers] = useState([{ userId: '', role: 'member' }]);
+        const [loginUsername, setLoginUsername] = useState('');
+        const [loginPassword, setLoginPassword] = useState('');
+        const [loginLoading, setLoginLoading] = useState(false);
 
         const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
 
@@ -196,6 +199,33 @@
             loadVaults();
           }
         }, [token]);
+
+        const handleLogin = async () => {
+          if (!loginUsername.trim() || !loginPassword) {
+            setStatus('Provide username and password to log in.');
+            return;
+          }
+
+          setLoginLoading(true);
+          setStatus('Logging in...');
+          try {
+            const payload = await fetchJson('/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                username: loginUsername.trim(),
+                password: loginPassword,
+              }),
+            });
+            setToken(payload.token);
+            setStatus(`Logged in as ${payload.user?.username ?? loginUsername.trim()}`);
+            setLoginPassword('');
+          } catch (err) {
+            setStatus(err.message);
+          } finally {
+            setLoginLoading(false);
+          }
+        };
 
         const loadVaults = async () => {
           if (!token) {
@@ -283,29 +313,35 @@
           }
         };
 
-        return React.createElement(
+        const handleLogout = () => {
+          setToken('');
+          setVaults([]);
+          setSelected(null);
+          setStatus('Signed out');
+        };
+
+        const managerPanels = React.createElement(
           React.Fragment,
           null,
           React.createElement(
             'div',
             { className: 'panel' },
-            React.createElement('h1', null, 'Shared Vaults'),
-            React.createElement(
-              'p',
-              null,
-              'Create and view shared vaults using your API JWT. Select a vault to inspect members and their access level.'
-            ),
-            React.createElement(
-              'label',
-              null,
-              'JWT'
-            ),
+            React.createElement('h2', null, 'Session'),
+            React.createElement('p', null, 'JWT captured automatically.'),
             React.createElement('textarea', {
               rows: 3,
-              placeholder: 'Paste Authorization Bearer token (JWT)',
+              readOnly: true,
               value: token,
-              onChange: (event) => setToken(event.target.value.trim()),
             }),
+            React.createElement(
+              'button',
+              {
+                type: 'button',
+                onClick: handleLogout,
+                style: { marginTop: '0.5rem' },
+              },
+              'Log out'
+            ),
             React.createElement('p', { className: 'status' }, status)
           ),
           React.createElement(
@@ -377,14 +413,57 @@
                 'div',
                 { className: 'members' },
                 (selected.members || []).map((member) =>
-                  React.createElement(
-                    'span',
-                    { key: member.userId, className: `member-chip ${member.role === 'viewer' ? 'viewer' : ''}` },
-                    `${member.userId} (${member.role})`
-                  )
+                React.createElement(
+                  'span',
+                  {
+                    key: member.identifier ?? member.userId,
+                    className: `member-chip ${member.role === 'viewer' ? 'viewer' : ''}`,
+                  },
+                  `${member.identifier ?? member.userId ?? 'unknown'} (${member.role})`
+                )
                 )
               )
             )
+        );
+
+        return React.createElement(
+          React.Fragment,
+          null,
+          !token
+            ? React.createElement(
+                'div',
+                { className: 'panel' },
+                React.createElement('h1', null, 'Shared Vaults'),
+                React.createElement(
+                  'p',
+                  null,
+                  'Log in using your credentials to capture a JWT automatically, then manage shared vaults below.'
+                ),
+                React.createElement('label', null, 'Username'),
+                React.createElement('input', {
+                  placeholder: 'Your username',
+                  value: loginUsername,
+                  onChange: (event) => setLoginUsername(event.target.value),
+                }),
+                React.createElement('label', null, 'Password'),
+                React.createElement('input', {
+                  type: 'password',
+                  placeholder: 'Your password',
+                  value: loginPassword,
+                  onChange: (event) => setLoginPassword(event.target.value),
+                }),
+                React.createElement(
+                  'button',
+                  {
+                    type: 'button',
+                    onClick: handleLogin,
+                    disabled: loginLoading,
+                  },
+                  loginLoading ? 'Logging in…' : 'Log in'
+                ),
+                React.createElement('p', { className: 'status' }, status)
+              )
+            : managerPanels
         );
       }
 

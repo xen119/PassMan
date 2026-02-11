@@ -51,6 +51,13 @@ const autoLockValueDisplay = document.getElementById('auto-lock-value');
 const sharedVaultListEl = document.getElementById('shared-vault-list');
 const sharedVaultStatusEl = document.getElementById('shared-vault-status');
 const sharedVaultEmptyEl = document.getElementById('shared-vault-empty');
+const sharedVaultEditButton = document.getElementById('shared-vault-edit-btn');
+const sharedVaultEditor = document.getElementById('shared-vault-editor');
+const sharedVaultNameInput = document.getElementById('shared-vault-name');
+const sharedVaultMembersContainer = document.getElementById('shared-vault-members');
+const sharedVaultAddMemberButton = document.getElementById('shared-vault-add-member');
+const sharedVaultEditorSave = document.getElementById('shared-vault-editor-save');
+const sharedVaultEditorCancel = document.getElementById('shared-vault-editor-cancel');
 const scanOtpButton = document.getElementById('scan-otp-btn');
 
 const DEFAULT_AUTO_LOCK_MINUTES = 5;
@@ -593,6 +600,175 @@ function renderSharedVaultList() {
 
     sharedVaultListEl.appendChild(item);
   });
+
+  updateSharedVaultEditorVisibility();
+}
+
+function appendSharedVaultMemberRow(member = {}, { isOwner = false } = {}) {
+  if (!sharedVaultMembersContainer) {
+    return null;
+  }
+
+  const row = document.createElement('div');
+  row.className = 'shared-vault-member-row';
+  row.dataset.status = member.status ?? 'active';
+  if (member.invitedBy) {
+    row.dataset.invitedBy = member.invitedBy;
+  }
+  if (isOwner) {
+    row.dataset.owner = 'true';
+  }
+
+  const input = document.createElement('input');
+  input.placeholder = 'User ID';
+  input.value = member.userId ?? '';
+  if (isOwner) {
+    input.readOnly = true;
+    input.title = 'Owner identity cannot be changed';
+  }
+
+  const roleSelect = document.createElement('select');
+  ['owner', 'admin', 'member', 'viewer'].forEach((role) => {
+    const option = document.createElement('option');
+    option.value = role;
+    option.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+    roleSelect.appendChild(option);
+  });
+  roleSelect.value = member.role ?? (isOwner ? 'owner' : 'member');
+  if (isOwner) {
+    roleSelect.disabled = true;
+  }
+
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.textContent = 'Remove';
+  removeButton.addEventListener('click', () => row.remove());
+  if (isOwner) {
+    removeButton.hidden = true;
+  }
+
+  row.append(input, roleSelect, removeButton);
+  sharedVaultMembersContainer.appendChild(row);
+  return row;
+}
+
+function renderSharedVaultEditor() {
+  if (!sharedVaultEditor) {
+    return;
+  }
+
+  const vault = state.activeSharedVault;
+  const isOwner = vault && vault.ownerId === state.userId;
+  if (!vault || !isOwner) {
+    sharedVaultEditor.setAttribute('hidden', '');
+    return;
+  }
+
+  sharedVaultEditor.removeAttribute('hidden');
+  if (sharedVaultNameInput) {
+    sharedVaultNameInput.value = vault.name ?? '';
+  }
+  if (sharedVaultMembersContainer) {
+    sharedVaultMembersContainer.innerHTML = '';
+    const memberMap = vault.memberKeys || {};
+    Object.entries(memberMap).forEach(([userId, info]) => {
+      appendSharedVaultMemberRow(
+        {
+          userId,
+          role: info.role,
+          status: info.status,
+          invitedBy: info.invitedBy,
+        },
+        { isOwner: userId === vault.ownerId }
+      );
+    });
+  }
+}
+
+function updateSharedVaultEditorVisibility() {
+  const isOwner = state.activeSharedVault?.ownerId === state.userId;
+  if (sharedVaultEditButton) {
+    sharedVaultEditButton.hidden = !Boolean(isOwner);
+  }
+  if (!isOwner && sharedVaultEditor) {
+    sharedVaultEditor.setAttribute('hidden', '');
+  }
+}
+
+function collectSharedVaultMemberWrappers() {
+  if (!sharedVaultMembersContainer) {
+    return [];
+  }
+
+  const rows = Array.from(sharedVaultMembersContainer.children).filter(
+    (row) => row instanceof HTMLElement
+  );
+  return rows
+    .map((row) => {
+      const input = row.querySelector('input');
+      const select = row.querySelector('select');
+      if (!input || !select) {
+        return null;
+      }
+      const userId = input.value.trim();
+      if (!userId) {
+        return null;
+      }
+      return {
+        userId,
+        role: select.value,
+        status: row.dataset.status ?? 'active',
+        wrappedKey: state.sharedVaultKeyBase ?? state.activeSharedVault?.salt ?? '',
+        invitedBy: row.dataset.invitedBy ?? state.userId,
+      };
+    })
+    .filter(Boolean);
+}
+
+async function saveSharedVaultEditorChanges() {
+  if (!state.activeSharedVault || !state.selectedSharedVaultId) {
+    return;
+  }
+
+  const vaultId = state.selectedSharedVaultId;
+  const name = sharedVaultNameInput?.value.trim();
+  if (!name) {
+    setStatus('Vault name is required', true);
+    return;
+  }
+
+  const memberWrappers = collectSharedVaultMemberWrappers();
+  if (!memberWrappers.some((member) => member.userId === state.userId)) {
+    memberWrappers.push({
+      userId: state.userId,
+      role: 'owner',
+      status: 'active',
+      wrappedKey: state.sharedVaultKeyBase ?? state.activeSharedVault.salt ?? '',
+      invitedBy: state.userId,
+    });
+  }
+
+  try {
+    await apiRequest(
+      `/shared-vaults/${vaultId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name,
+          memberWrappers,
+        }),
+      },
+      true
+    );
+    setStatus('Shared vault updated');
+    sharedVaultEditor?.setAttribute('hidden', '');
+    await fetchSharedVaults();
+    if (state.selectedSharedVaultId) {
+      await loadSharedVault(state.selectedSharedVaultId);
+    }
+  } catch (error) {
+    setStatus(`Failed to update shared vault: ${error.message}`, true);
+  }
 }
 
 async function selectSharedVault(vault) {
@@ -603,6 +779,7 @@ async function selectSharedVault(vault) {
     state.sharedVaultKeyBase = null;
     state.sharedVaultKey = null;
     renderSharedVaultList();
+    updateSharedVaultEditorVisibility();
     await loadVault();
     setStatus('Switched back to your personal vault');
     return;
@@ -704,9 +881,11 @@ async function loadSharedVault(vaultId) {
     const wrappedKey = getMemberWrappedKey(vault);
     await ensureSharedCryptoKey(wrappedKey);
     await decryptSharedVault(vault);
+    updateSharedVaultEditorVisibility();
     setStatus(`Shared vault "${vault.name}" loaded`);
   } catch (error) {
     state.activeSharedVault = null;
+    updateSharedVaultEditorVisibility();
     setStatus(error.message, true);
   }
 }
@@ -741,6 +920,7 @@ function resetSharedVaultState() {
   state.sharedVaultKeyBase = null;
   state.sharedVaultKey = null;
   renderSharedVaultList();
+  updateSharedVaultEditorVisibility();
 }
 
 function syncEntriesToBackground() {
@@ -1306,6 +1486,22 @@ entryModal?.addEventListener('click', (event) => {
 scanOtpButton?.addEventListener('click', () => {
   const scanUrl = chrome.runtime.getURL('otp-scan.html');
   window.open(scanUrl, 'otp-scan', 'width=440,height=640');
+});
+
+sharedVaultEditButton?.addEventListener('click', () => {
+  renderSharedVaultEditor();
+});
+
+sharedVaultAddMemberButton?.addEventListener('click', () => {
+  appendSharedVaultMemberRow();
+});
+
+sharedVaultEditorCancel?.addEventListener('click', () => {
+  sharedVaultEditor?.setAttribute('hidden', '');
+});
+
+sharedVaultEditorSave?.addEventListener('click', () => {
+  saveSharedVaultEditorChanges();
 });
 
 document.addEventListener('keydown', (event) => {
