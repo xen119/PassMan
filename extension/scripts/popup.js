@@ -143,6 +143,9 @@ const selectedVaultNameEl = document.getElementById('selected-vault-name');
 const customApiInput = document.getElementById('custom-api-base');
 const customApiSaveButton = document.getElementById('custom-api-save');
 const customApiResetButton = document.getElementById('custom-api-reset');
+const loginSettingsButton = document.getElementById('login-settings-btn');
+const loginSettingsModal = document.getElementById('login-settings-modal');
+const loginSettingsClose = document.getElementById('login-settings-close');
 
 const DEFAULT_AUTO_LOCK_MINUTES = 5;
 const AUTO_LOCK_PREF_KEY = 'autoLockMinutes';
@@ -473,6 +476,22 @@ function closeAutoLockModal() {
   autoLockModal.setAttribute('hidden', '');
 }
 
+function openLoginSettingsModal() {
+  if (!loginSettingsModal) {
+    return;
+  }
+
+  loginSettingsModal.removeAttribute('hidden');
+}
+
+function closeLoginSettingsModal() {
+  if (!loginSettingsModal) {
+    return;
+  }
+
+  loginSettingsModal.setAttribute('hidden', '');
+}
+
 function openEntryModal() {
   if (!entryModal) {
     return;
@@ -713,6 +732,12 @@ function updateView() {
   }
   if (vaultSelectorRow) {
     vaultSelectorRow.hidden = !signedIn;
+  }
+  if (loginSettingsButton) {
+    loginSettingsButton.hidden = signedIn;
+  }
+  if (signedIn) {
+    closeLoginSettingsModal();
   }
   renderSharedVaultList();
   updateSelectedVaultName();
@@ -1739,6 +1764,18 @@ entryModal?.addEventListener('click', (event) => {
   }
 });
 
+loginSettingsButton?.addEventListener('click', () => {
+  openLoginSettingsModal();
+});
+
+loginSettingsClose?.addEventListener('click', () => closeLoginSettingsModal());
+
+loginSettingsModal?.addEventListener('click', (event) => {
+  if (event.target === loginSettingsModal) {
+    closeLoginSettingsModal();
+  }
+});
+
 scanOtpButton?.addEventListener('click', () => {
   const scanUrl = chrome.runtime.getURL('otp-scan.html');
   window.open(scanUrl, 'otp-scan', 'width=440,height=640');
@@ -1787,6 +1824,11 @@ document.addEventListener('keydown', (event) => {
 
   if (state.vaultModalOpen) {
     closeVaultModal();
+    return;
+  }
+
+  if (loginSettingsModal && !loginSettingsModal.hasAttribute('hidden')) {
+    closeLoginSettingsModal();
     return;
   }
 

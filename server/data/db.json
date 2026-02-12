@@ -4,7 +4,8 @@
       "id": "aNfSwc9Kl7vNxBurGw42h",
       "username": "dnefdt",
       "passwordHash": "$2b$12$h5Un0XFSgW.obmrEgEnNCeWhfROxWdG7Bhmojlww0GGRHXuLkWlhu",
-      "createdAt": "2026-02-08T15:28:49.758Z"
+      "createdAt": "2026-02-08T15:28:49.758Z",
+      "lastLogin": "2026-02-12T18:39:51.454Z"
     },
     {
       "id": "VWJvKBbEYYzYP9RPrvHIN",
@@ -20,7 +21,7 @@
       "msOid": "ppqIgrmY_74-O9An58w8-b1FxsdnDwspduraaFdubZM",
       "msEmail": "david@dev.gbnl.uk",
       "msName": "David N",
-      "lastLogin": "2026-02-12T16:33:59.310Z"
+      "lastLogin": "2026-02-12T17:37:21.801Z"
     }
   ],
   "vaults": [
@@ -101,12 +102,49 @@
       }
     }
   ],
-  "msStates": [],
+  "msStates": [
+    {
+      "state": "zvrars_m-lHzlcRBITw1J",
+      "codeVerifier": "VkWj7OjPsvNtfAXIR014l39pSN_UbNAG-efuiQG8ki4haU_VsiRi7YIupiPQ3jXWBrownTqKkii4n7bzMEg1lQ",
+      "codeChallenge": "fxHlkjmfRqMu6ann8gk44Vm8B48XZPjRw62m6JzrbQE",
+      "createdAt": 1770921588135
+    }
+  ],
   "config": {
     "msClientId": "9496929c-1e51-4753-a0ad-89a6de064c14",
     "msTenantId": "332901d6-db72-4c07-aafe-491bb28e26b8"
   },
   "auditLog": [
+    {
+      "id": "rG2H1H6Gec7VnOgWzwhCq",
+      "timestamp": "2026-02-12T18:39:52.582Z",
+      "action": "login",
+      "userId": "aNfSwc9Kl7vNxBurGw42h",
+      "username": "dnefdt",
+      "details": {
+        "method": "password"
+      }
+    },
+    {
+      "id": "4XJGGwP38uVQXDTCi6V6s",
+      "timestamp": "2026-02-12T18:39:51.460Z",
+      "action": "login",
+      "userId": "aNfSwc9Kl7vNxBurGw42h",
+      "username": "dnefdt",
+      "details": {
+        "method": "password"
+      }
+    },
+    {
+      "id": "TW_Pyy1kqP-UvTGDLYHRN",
+      "timestamp": "2026-02-12T17:37:21.807Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
     {
       "id": "_G-vnk7esnT35_c0DRZOd",
       "timestamp": "2026-02-12T16:35:46.298Z",

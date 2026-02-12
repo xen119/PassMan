@@ -8,6 +8,18 @@
   </head>
       <body>
     <main class="wrapper">
+      <button
+        type="button"
+        id="login-settings-btn"
+        class="icon-btn login-settings-btn"
+        aria-label="Open API settings"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            d="M18.94 12.82a7.93 7.93 0 0 0 .04-.64 7.93 7.93 0 0 0-.04-.64l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.33a.5.5 0 0 0-.6-.22l-2.39.96a7.65 7.65 0 0 0-1.14-.66l-.36-2.55a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.55a7.65 7.65 0 0 0-1.14.66l-2.39-.96a.5.5 0 0 0-.6.22L3.3 9.75a.5.5 0 0 0 .12.61l2.03 1.58a8.09 8.09 0 0 0 0 1.28L3.42 14.3a.5.5 0 0 0-.12.61l1.92 3.33a.5.5 0 0 0 .6.22l2.39-.96c.35.27.73.5 1.14.66l.36 2.55a.5.5 0 0 0 .5.42h3.84a.5.5 0 0 0 .5-.42l.36-2.55a7.65 7.65 0 0 0 1.14-.66l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.33a.5.5 0 0 0-.12-.61zM12 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"
+          ></path>
+        </svg>
+      </button>
       <header>
         <div class="header-text">
           <h1>Zero Knowledge Vault</h1>
@@ -46,15 +58,6 @@
 
       <div class="popup-body">
         <div id="status" class="status"></div>
-        <div class="api-config-row">
-          <label for="custom-api-base">Custom API endpoint</label>
-          <div class="api-config-inputs">
-            <input id="custom-api-base" type="url" placeholder="https://example.com:4000" />
-            <button type="button" id="custom-api-save" class="secondary">Set</button>
-            <button type="button" id="custom-api-reset" class="secondary">Reset</button>
-          </div>
-          <small>Leave empty to use localhost / automatic HTTP(S) fallback.</small>
-        </div>
 
         <section id="auth-section">
           <form id="auth-form">
@@ -140,6 +143,28 @@
               <p id="shared-vault-empty" class="shared-vault-empty">No shared vaults yet.</p>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="modal-overlay login-settings-overlay" id="login-settings-modal" hidden>
+        <div class="modal login-settings-panel" role="dialog" aria-modal="true" aria-labelledby="login-settings-title">
+          <div class="modal-header">
+            <h3 id="login-settings-title">Custom API endpoint</h3>
+            <button
+              type="button"
+              class="icon-btn close-btn"
+              id="login-settings-close"
+              aria-label="Close API settings"
+            >
+              ×
+            </button>
+          </div>
+          <label for="custom-api-base">Custom API endpoint</label>
+          <div class="api-config-inputs">
+            <input id="custom-api-base" type="url" placeholder="https://example.com:4000" />
+            <button type="button" id="custom-api-save" class="secondary">Set</button>
+            <button type="button" id="custom-api-reset" class="secondary">Reset</button>
+          </div>
+          <small>Leave empty to use localhost / automatic HTTP(S) fallback.</small>
         </div>
       </div>
       <div class="modal-overlay" id="auto-lock-modal" hidden>
