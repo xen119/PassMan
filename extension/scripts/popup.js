@@ -841,13 +841,18 @@ async function selectSharedVault(vault) {
     renderSharedVaultList();
     updateSharedVaultEditorVisibility();
     await loadVault();
+    updateSelectedVaultName();
     setStatus('Switched back to your personal vault');
     return;
   }
 
   state.selectedSharedVaultId = vaultId;
+  state.activeSharedVault = null;
   renderSharedVaultList();
   if (!vaultId) {
+    await loadVault();
+    updateSelectedVaultName();
+    setStatus('Switched back to your personal vault');
     return;
   }
 
@@ -1372,6 +1377,9 @@ entryForm.addEventListener('submit', async (event) => {
     return;
   }
 
+    const editingEntry = state.editingEntryId
+      ? state.entries.find((item) => item.id === state.editingEntryId)
+      : null;
     const entryPayload = {
       label,
       username: entryUsername.value.trim(),
@@ -1379,7 +1387,7 @@ entryForm.addEventListener('submit', async (event) => {
       notes: entryNotes.value.trim(),
       url: entryUrl.value.trim(),
       otpSecret: entryOtpSecret.value.trim(),
-      autoSignIn: entry.autoSignIn ?? false,
+      autoSignIn: editingEntry?.autoSignIn ?? false,
       updatedAt: new Date().toISOString(),
     };
 
