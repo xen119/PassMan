@@ -11,9 +11,12 @@ import {
 
 const API_BASES = ['https://localhost:4000', 'http://localhost:4000'];
 let apiBaseIndex = 0;
-const getApiBase = () => API_BASES[apiBaseIndex];
+const getApiBase = () => customApiBase?.trim() || API_BASES[apiBaseIndex];
 
 function fallbackToHttp() {
+  if (customApiBase) {
+    return false;
+  }
   if (apiBaseIndex >= API_BASES.length - 1) {
     return false;
   }
@@ -23,6 +26,55 @@ function fallbackToHttp() {
     true
   );
   return true;
+}
+
+function applyCustomApiBase(value) {
+  if (!value) {
+    customApiBase = null;
+  } else {
+    customApiBase = value.trim().replace(/\/+$/, '');
+  }
+  if (customApiInput) {
+    customApiInput.value = customApiBase ?? '';
+  }
+}
+
+function persistCustomApiBase() {
+  if (!chrome.storage?.local) {
+    return;
+  }
+  chrome.storage.local.set({ [CUSTOM_API_KEY]: customApiBase });
+}
+
+function loadCustomApiBase() {
+  if (!chrome.storage?.local) {
+    return;
+  }
+  chrome.storage.local.get(CUSTOM_API_KEY, (result) => {
+    applyCustomApiBase(result?.[CUSTOM_API_KEY] ?? null);
+  });
+}
+
+function updateMsSsoVisibility() {
+  if (!msSsoButton) {
+    return;
+  }
+  if (msSsoRow) {
+    msSsoRow.hidden = !msSsoConfigured;
+  }
+  msSsoButton.disabled = !msSsoConfigured;
+}
+
+async function loadMsSsoConfig() {
+  try {
+    const payload = await apiRequest('/config', {}, false);
+    msSsoConfigured = Boolean(payload?.msClientId?.trim());
+  } catch {
+    msSsoConfigured = false;
+  } finally {
+    msSsoConfigLoaded = true;
+    updateMsSsoVisibility();
+  }
 }
 
 const authSection = document.getElementById('auth-section');
@@ -77,9 +129,20 @@ const vaultModalToggle = document.getElementById('vault-modal-toggle');
 const vaultModalClose = document.getElementById('vault-modal-close');
 const vaultSelectorRow = document.getElementById('vault-selector-row');
 const personalVaultButton = document.getElementById('personal-vault-btn');
+const msSsoButton = document.getElementById('ms-sso-button');
+const msSsoRow = document.querySelector('.ms-sso-row');
+if (msSsoRow) {
+  msSsoRow.hidden = true;
+}
+if (msSsoButton) {
+  msSsoButton.disabled = true;
+}
 const scanOtpButton = document.getElementById('scan-otp-btn');
 const headerUserEl = document.querySelector('.header-user');
 const selectedVaultNameEl = document.getElementById('selected-vault-name');
+const customApiInput = document.getElementById('custom-api-base');
+const customApiSaveButton = document.getElementById('custom-api-save');
+const customApiResetButton = document.getElementById('custom-api-reset');
 
 const DEFAULT_AUTO_LOCK_MINUTES = 5;
 const AUTO_LOCK_PREF_KEY = 'autoLockMinutes';
@@ -110,10 +173,80 @@ const state = {
   sharedVaultKey: null,
   vaultModalOpen: false,
 };
+const CUSTOM_API_KEY = 'customApiBase';
+let customApiBase = null;
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message ?? '';
   statusEl.style.color = isError ? '#c53030' : '#1a202c';
+}
+
+let msSsoWindow = null;
+let msSsoConfigured = false;
+let msSsoConfigLoaded = false;
+
+function handleMsSsoMessage(event) {
+  const expectedOrigin = (() => {
+    try {
+      return new URL(getApiBase()).origin;
+    } catch {
+      return null;
+    }
+  })();
+  if (expectedOrigin && event.origin !== expectedOrigin) {
+    return;
+  }
+  if (!event.data || event.data.type !== 'ms-sso') {
+    return;
+  }
+  window.removeEventListener('message', handleMsSsoMessage);
+  if (msSsoWindow && !msSsoWindow.closed) {
+    msSsoWindow.close();
+  }
+
+  if (event.data.error) {
+    setStatus(event.data.error, true);
+    return;
+  }
+
+  const { token, user } = event.data;
+  if (!token || !user) {
+    setStatus('Microsoft sign-in failed', true);
+    return;
+  }
+
+  state.token = token;
+  state.username = user.username ?? '';
+  state.userId = user.id ?? state.userId;
+  state.masterPassword = null;
+  state.masterKey = null;
+  setStatus(`Signed in as ${state.username}`);
+  updateView();
+  loadVault().catch((error) => setStatus(error.message, true));
+  fetchSharedVaults().catch(() => {});
+  syncSessionToBackground().catch(() => {});
+}
+
+function startMicrosoftSSO() {
+  if (msSsoWindow && !msSsoWindow.closed) {
+    msSsoWindow.focus();
+    return;
+  }
+  if (!msSsoConfigLoaded) {
+    setStatus('Checking Microsoft SSO configuration…', true);
+    return;
+  }
+  if (!msSsoConfigured) {
+    setStatus('Microsoft SSO is not configured on the server', true);
+    return;
+  }
+  const authUrl = `${getApiBase()}/sso/ms/start`;
+  msSsoWindow = window.open(authUrl, 'ms-sso', 'width=500,height=700');
+  if (!msSsoWindow) {
+    setStatus('Please allow popups to use Microsoft sign-in', true);
+    return;
+  }
+  window.addEventListener('message', handleMsSsoMessage);
 }
 
 function escapeHtml(value) {
@@ -1550,6 +1683,26 @@ authForm?.addEventListener('submit', (event) => {
   handleAuthentication('login');
 });
 
+msSsoButton?.addEventListener('click', startMicrosoftSSO);
+customApiSaveButton?.addEventListener('click', () => {
+  const value = customApiInput?.value?.trim();
+  if (!value) {
+    setStatus('Enter a valid API endpoint URL', true);
+    return;
+  }
+  applyCustomApiBase(value);
+  persistCustomApiBase();
+  setStatus('Custom API endpoint saved');
+  loadMsSsoConfig().catch(() => {});
+});
+
+customApiResetButton?.addEventListener('click', () => {
+  applyCustomApiBase(null);
+  persistCustomApiBase();
+  setStatus('Using default localhost endpoint');
+  loadMsSsoConfig().catch(() => {});
+});
+
 logoutBtn.addEventListener('click', () => {
   clearSessionState({ reason: 'user-logout' });
   setStatus('Signed out');
@@ -1648,6 +1801,8 @@ loadRememberedCredentials();
 
 loadAutoLockPreference();
 loadOtpScanResult();
+loadCustomApiBase();
+loadMsSsoConfig();
 restoreSessionFromBackground().catch(() => {});
 
 chrome.storage?.onChanged?.addListener?.((changes, area) => {

@@ -11,6 +11,15 @@
       "username": "hkhan",
       "passwordHash": "$2b$12$PmNPokU1nlj9/c1CE1RLxu8ksLtebDcA8wcjCTxgByVXQu/GJ67FW",
       "createdAt": "2026-02-10T23:31:18.790Z"
+    },
+    {
+      "id": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "passwordHash": "",
+      "createdAt": "2026-02-12T15:11:59.113Z",
+      "msOid": "ppqIgrmY_74-O9An58w8-b1FxsdnDwspduraaFdubZM",
+      "msEmail": "david@dev.gbnl.uk",
+      "msName": "David N"
     }
   ],
   "vaults": [
@@ -22,6 +31,15 @@
       "salt": "h4diCMOr3YBNcaWPeSJ4aQ==",
       "version": 40,
       "updatedAt": "2026-02-12T08:18:41.162Z"
+    },
+    {
+      "id": "PG6bFZvWdISAUnu2jefdW",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "encryptedVault": "xkz334qrOA480F4fg4cXKAGN5a9Ro2gETCtoHe1an9TdveqBbJQP8PYca0cAU+EWBxKMGWtfzv64MpQnmiEHajqw4AZqn1KjFYchDp3cK2DcH/cMO0vv8JAOLlGHDf7FpIkocTyQNNGf6vXnm+UvJbgUvADsYUiSzgh+3xD8cWjszSe/8YeC7RJ6u6exVaKZLzzqPScEk7pqThfzrmETrfozaO1oKMFlv+SsUEfah5s8DUUNf6zmS6c1oH7QV+m1fiF9OIZjKHDp1FA+OZjTmJVM0yZ7KheBiehJJwRBS2SeNUydNg==",
+      "iv": "XdcSp907PsuILnoJ",
+      "salt": "RmKAnYqPvXrnnt7MBW5ICQ==",
+      "version": 1,
+      "updatedAt": "2026-02-12T15:12:09.077Z"
     }
   ],
   "sharedVaults": [
@@ -52,6 +70,39 @@
           "invitedAt": "2026-02-12T07:32:33.221Z"
         }
       }
+    },
+    {
+      "id": "TLsIjeOWczUMdc_olPlGq",
+      "name": "Team Vault",
+      "ownerId": "LaY1lL97C5v2dwOBydar-",
+      "encryptedVault": "No8MJLKDMcyXoYVlBa6VrhlY",
+      "iv": "oJALR3ZdNWHHHvWt",
+      "salt": "92/r4xTRVvnvv37rCrHlI6MRhEnDiTPzqnOespUqXm4=",
+      "version": 1,
+      "updatedAt": "2026-02-12T15:28:17.196Z",
+      "memberKeys": {
+        "VWJvKBbEYYzYP9RPrvHIN": {
+          "identifier": "hkhan",
+          "wrappedKey": "92/r4xTRVvnvv37rCrHlI6MRhEnDiTPzqnOespUqXm4=",
+          "role": "member",
+          "status": "active",
+          "invitedBy": "admin-ui",
+          "invitedAt": "2026-02-12T15:28:17.196Z"
+        },
+        "LaY1lL97C5v2dwOBydar-": {
+          "wrappedKey": "92/r4xTRVvnvv37rCrHlI6MRhEnDiTPzqnOespUqXm4=",
+          "role": "owner",
+          "status": "active",
+          "invitedBy": "LaY1lL97C5v2dwOBydar-",
+          "invitedAt": "2026-02-12T15:28:17.196Z",
+          "identifier": "david@dev.gbnl.uk"
+        }
+      }
     }
-  ]
+  ],
+  "msStates": [],
+  "config": {
+    "msClientId": "9496929c-1e51-4753-a0ad-89a6de064c14",
+    "msTenantId": "332901d6-db72-4c07-aafe-491bb28e26b8"
+  }
 }

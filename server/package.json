@@ -17,6 +17,7 @@
     "jsonwebtoken": "^9.0.3",
     "lowdb": "^7.0.1",
     "nanoid": "^5.1.6",
-    "selfsigned": "^2.1.0"
+    "selfsigned": "^2.1.0",
+    "jwks-rsa": "^3.0.0"
   }
 }

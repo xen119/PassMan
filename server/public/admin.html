@@ -36,6 +36,63 @@
         margin-bottom: 1.25rem;
         box-shadow: 0 15px 40px rgba(2, 6, 23, 0.65);
       }
+      .admin-layout {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+      }
+      .admin-inner {
+        display: grid;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 1.2rem;
+      }
+      .side-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+      .nav-btn {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        background: rgba(15, 23, 42, 0.86);
+        color: #f8fafc;
+        padding: 0.65rem 1rem;
+        text-align: left;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: border-color 0.2s ease, transform 0.2s ease;
+      }
+      .nav-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      .nav-btn.active {
+        border-color: rgba(99, 102, 241, 0.9);
+        transform: translateX(2px);
+      }
+      .admin-main {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .admin-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .admin-placeholder {
+        padding: 1.2rem 1.4rem;
+        border-radius: 14px;
+        border: 1px dashed rgba(148, 163, 184, 0.5);
+        color: #cbd5f5;
+        background: rgba(15, 23, 42, 0.5);
+      }
+      }
+      .sso-panel {
+        border-left: 3px solid rgba(99, 102, 241, 0.8);
+      }
       label {
         font-size: 0.75rem;
         letter-spacing: 0.08em;
@@ -123,6 +180,11 @@
         flex-direction: column;
         gap: 0.5rem;
       }
+      @media (max-width: 920px) {
+        .admin-layout {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -195,6 +257,12 @@
         const [loginUsername, setLoginUsername] = useState('');
         const [loginPassword, setLoginPassword] = useState('');
         const [loginLoading, setLoginLoading] = useState(false);
+        const [msClientId, setMsClientId] = useState('');
+        const [msTenantId, setMsTenantId] = useState('common');
+        const msSsoWindowRef = React.useRef(null);
+        const [msClientSecret, setMsClientSecret] = useState('');
+        const [msClientSecretSet, setMsClientSecretSet] = useState(false);
+        const [activeSection, setActiveSection] = useState('vault');
 
         const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
 
@@ -203,6 +271,67 @@
             loadVaults();
           }
         }, [token]);
+
+        useEffect(() => {
+          const loadConfig = async () => {
+            try {
+              const payload = await fetchJson('/admin/config');
+              setMsClientId(payload.msClientId ?? '');
+              setMsTenantId(payload.msTenantId ?? 'common');
+              setMsClientSecretSet(Boolean(payload.msClientSecretSet));
+              setMsClientSecret('');
+            } catch (err) {
+              setStatus(err.message);
+            }
+          };
+          loadConfig();
+        }, []);
+
+        useEffect(() => {
+          if (!token && activeSection === 'sso') {
+            setActiveSection('vault');
+          }
+        }, [token, activeSection]);
+
+        useEffect(() => {
+          const handleMsMessage = (event) => {
+            if (event.origin !== window.location.origin) {
+              return;
+            }
+            if (!event.data || event.data.type !== 'ms-sso') {
+              return;
+            }
+            if (msSsoWindowRef.current && !msSsoWindowRef.current.closed) {
+              msSsoWindowRef.current.close();
+            }
+            msSsoWindowRef.current = null;
+
+            if (event.data.error) {
+              setStatus(event.data.error);
+              return;
+            }
+
+            const { token: msToken, user: msUser } = event.data;
+            if (!msToken || !msUser) {
+              setStatus('Microsoft sign-in failed');
+              return;
+            }
+
+            setLoginUsername(msUser.username ?? '');
+            setLoginPassword('');
+            setSessionUserId(msUser.id ?? '');
+            setToken(msToken);
+            setStatus(`Logged in as ${msUser.username ?? 'Microsoft user'}`);
+          };
+
+          window.addEventListener('message', handleMsMessage);
+          return () => {
+            window.removeEventListener('message', handleMsMessage);
+            if (msSsoWindowRef.current && !msSsoWindowRef.current.closed) {
+              msSsoWindowRef.current.close();
+            }
+          };
+        }, []);
 
         const handleLogin = async () => {
           if (!loginUsername.trim() || !loginPassword) {
@@ -229,6 +358,73 @@
             setStatus(err.message);
           } finally {
             setLoginLoading(false);
+          }
+        };
+
+        const handleSaveConfig = async () => {
+          try {
+            const payload = {
+              msClientId: msClientId.trim() || '',
+              msTenantId: msTenantId.trim() || '',
+            };
+            if (msClientSecret.trim()) {
+              payload.msClientSecret = msClientSecret.trim();
+            }
+            const response = await fetchJson(
+              '/admin/config',
+              {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' },
+              }
+            );
+            setMsClientSecret('');
+            setMsClientSecretSet(Boolean(response.msClientSecretSet));
+            setStatus('SSO settings saved');
+          } catch (err) {
+            setStatus(err.message);
+          }
+        };
+
+        const handleResetConfig = async () => {
+          try {
+            const response = await fetchJson(
+              '/admin/config',
+              {
+                method: 'POST',
+                body: JSON.stringify({ msClientId: '', msTenantId: '', clearMsClientSecret: true }),
+                headers: { 'Content-Type': 'application/json' },
+              }
+            );
+            setMsClientId('');
+            setMsTenantId('common');
+            setMsClientSecret('');
+            setMsClientSecretSet(Boolean(response.msClientSecretSet));
+            setStatus('SSO settings cleared');
+          } catch (err) {
+            setStatus(err.message);
+          }
+        };
+
+        const handleClearSecret = async () => {
+          if (!msClientSecretSet) {
+            setStatus('No client secret stored');
+            return;
+          }
+          try {
+            const response = await fetchJson(
+              '/admin/config',
+              {
+                method: 'POST',
+                body: JSON.stringify({ clearMsClientSecret: true }),
+                headers: { 'Content-Type': 'application/json' },
+              }
+            );
+            setMsClientSecret('');
+            setMsClientSecretSet(Boolean(response.msClientSecretSet));
+            setStatus('Client secret cleared');
+          } catch (err) {
+            setStatus(err.message);
           }
         };
 
@@ -409,6 +605,24 @@
           setSelected(null);
           setSessionUserId('');
           setStatus('Signed out');
+        };
+
+        const startMsSso = () => {
+          if (!msClientId.trim()) {
+            setStatus('Configure Microsoft SSO first');
+            return;
+          }
+          if (msSsoWindowRef.current && !msSsoWindowRef.current.closed) {
+            msSsoWindowRef.current.focus();
+            return;
+          }
+          const popup = window.open('/sso/ms/start', 'admin-ms-sso', 'width=500,height=700');
+          if (!popup) {
+            setStatus('Allow popups to use Microsoft sign-in');
+            return;
+          }
+          msSsoWindowRef.current = popup;
+          setStatus('Signing in with Microsoft…');
         };
 
         const sessionPanel = React.createElement(
@@ -594,6 +808,53 @@
               )
             : null;
 
+        const secretDescription = msClientSecretSet
+          ? 'A client secret is stored. Leave this blank to keep it, or use Reset / Clear secret to remove it.'
+          : 'No client secret stored. Provide one if your Azure app requires it.';
+        const ssoSettingsPanel = React.createElement(
+          'div',
+          { className: 'panel sso-panel' },
+          React.createElement('h2', null, 'Microsoft SSO configuration'),
+          React.createElement('label', null, 'Azure application (client) ID'),
+          React.createElement('input', {
+            placeholder: 'Application (client) ID',
+            value: msClientId,
+            onChange: (event) => setMsClientId(event.target.value),
+          }),
+          React.createElement('label', null, 'Tenant ID (leave blank for "common")'),
+          React.createElement('input', {
+            placeholder: 'common',
+            value: msTenantId,
+            onChange: (event) => setMsTenantId(event.target.value),
+          }),
+          React.createElement('label', null, 'Client secret (optional)'),
+          React.createElement('input', {
+            type: 'password',
+            placeholder: msClientSecretSet
+              ? 'Stored secret (leave blank to keep)'
+              : 'Enter client secret',
+            value: msClientSecret,
+            onChange: (event) => setMsClientSecret(event.target.value),
+          }),
+          React.createElement(
+            'div',
+            { style: { display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' } },
+            React.createElement('button', { onClick: handleSaveConfig, className: 'primary' }, 'Save settings'),
+            React.createElement('button', { onClick: handleResetConfig, className: 'secondary' }, 'Reset'),
+            React.createElement(
+              'button',
+              {
+                onClick: handleClearSecret,
+                className: 'secondary',
+                disabled: !msClientSecretSet,
+                style: { borderColor: 'rgba(248, 113, 113, 0.6)', color: '#fecaca' },
+              },
+              'Clear secret'
+            )
+          ),
+          React.createElement('p', { className: 'status' }, secretDescription)
+        );
+
         const managerPanels = React.createElement(
           React.Fragment,
           null,
@@ -604,44 +865,93 @@
           editorPanel
         );
 
+        const loginPanel = React.createElement(
+          'div',
+          { className: 'panel' },
+          React.createElement('h1', null, 'Shared Vaults'),
+          React.createElement(
+            'p',
+            null,
+            'Log in to manage shared vaults and access the SSO settings.'
+          ),
+          React.createElement('label', null, 'Username'),
+          React.createElement('input', {
+            placeholder: 'Your username',
+            value: loginUsername,
+            onChange: (event) => setLoginUsername(event.target.value),
+          }),
+          React.createElement('label', null, 'Password'),
+          React.createElement('input', {
+            type: 'password',
+            placeholder: 'Your password',
+            value: loginPassword,
+            onChange: (event) => setLoginPassword(event.target.value),
+          }),
+          React.createElement(
+            'button',
+            {
+              type: 'button',
+              onClick: handleLogin,
+              disabled: loginLoading,
+            },
+            loginLoading ? 'Logging in…' : 'Log in'
+          ),
+          React.createElement(
+            'button',
+            {
+              type: 'button',
+              onClick: startMsSso,
+              className: 'secondary',
+              disabled: !msClientId.trim(),
+              style: { marginTop: '0.6rem' },
+            },
+            'Sign in with Microsoft'
+          ),
+          React.createElement('p', { className: 'status' }, status)
+        );
+
+        const primaryColumn = token ? managerPanels : loginPanel;
+
+        const mainContent =
+          activeSection === 'vault'
+            ? token
+              ? managerPanels
+              : loginPanel
+            : token
+              ? ssoSettingsPanel
+              : React.createElement('div', { className: 'admin-placeholder' }, 'Sign in to access Microsoft SSO settings.');
+
         return React.createElement(
-          React.Fragment,
-          null,
-          !token
-            ? React.createElement(
-                'div',
-                { className: 'panel' },
-                React.createElement('h1', null, 'Shared Vaults'),
-                React.createElement(
-                  'p',
-                  null,
-                  'Log in using your credentials to capture a JWT automatically, then manage shared vaults below.'
-                ),
-                React.createElement('label', null, 'Username'),
-                React.createElement('input', {
-                  placeholder: 'Your username',
-                  value: loginUsername,
-                  onChange: (event) => setLoginUsername(event.target.value),
-                }),
-                React.createElement('label', null, 'Password'),
-                React.createElement('input', {
-                  type: 'password',
-                  placeholder: 'Your password',
-                  value: loginPassword,
-                  onChange: (event) => setLoginPassword(event.target.value),
-                }),
-                React.createElement(
-                  'button',
-                  {
-                    type: 'button',
-                    onClick: handleLogin,
-                    disabled: loginLoading,
-                  },
-                  loginLoading ? 'Logging in…' : 'Log in'
-                ),
-                React.createElement('p', { className: 'status' }, status)
+          'div',
+          { className: 'admin-layout' },
+          React.createElement(
+            'div',
+            { className: 'admin-inner' },
+            React.createElement(
+              'nav',
+              { className: 'side-nav' },
+              React.createElement(
+                'button',
+                {
+                  className: `nav-btn ${activeSection === 'vault' ? 'active' : ''}`,
+                  type: 'button',
+                  onClick: () => setActiveSection('vault'),
+                },
+                'Vault Manager'
+              ),
+              React.createElement(
+                'button',
+                {
+                  className: `nav-btn ${activeSection === 'sso' ? 'active' : ''}`,
+                  type: 'button',
+                  onClick: () => setActiveSection('sso'),
+                  disabled: !token,
+                },
+                'Microsoft SSO settings'
               )
-            : managerPanels
+            ),
+            React.createElement('div', { className: 'admin-main' }, mainContent)
+          )
         );
       }
 

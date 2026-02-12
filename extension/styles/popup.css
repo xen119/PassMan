@@ -281,6 +281,51 @@ textarea {
   margin-top: 0.25rem;
 }
 
+.ms-sso-row {
+  margin-top: 0.3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.ms-sso-btn {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.6);
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  color: #f8fafc;
+  font-weight: 600;
+  padding: 0.6rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.ms-sso-btn:hover {
+  opacity: 0.9;
+}
+
+.api-config-row {
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+  padding-top: 0.5rem;
+  margin-top: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.api-config-row label {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.api-config-inputs {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.api-config-inputs input {
+  flex: 1;
+}
+
 button {
   border: none;
   border-radius: 12px;

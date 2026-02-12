@@ -46,6 +46,15 @@
 
       <div class="popup-body">
         <div id="status" class="status"></div>
+        <div class="api-config-row">
+          <label for="custom-api-base">Custom API endpoint</label>
+          <div class="api-config-inputs">
+            <input id="custom-api-base" type="url" placeholder="https://example.com:4000" />
+            <button type="button" id="custom-api-save" class="secondary">Set</button>
+            <button type="button" id="custom-api-reset" class="secondary">Reset</button>
+          </div>
+          <small>Leave empty to use localhost / automatic HTTP(S) fallback.</small>
+        </div>
 
         <section id="auth-section">
           <form id="auth-form">
@@ -72,6 +81,9 @@
             <div class="form-actions">
               <button type="submit" id="login-btn" class="primary">Log in</button>
               <button type="button" id="register-btn" class="secondary">Register</button>
+            </div>
+            <div class="ms-sso-row">
+              <button type="button" id="ms-sso-button" class="ms-sso-btn">Sign in with Microsoft</button>
             </div>
           </form>
         </section>
