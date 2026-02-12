@@ -934,7 +934,6 @@ async function loadSharedVault(vaultId) {
     return;
   }
 
-  setStatus('Loading shared vault...');
   try {
     const payload = await apiRequest(`/shared-vaults/${vaultId}`, { method: 'GET' }, true);
     const vault = payload.vault;
@@ -948,7 +947,6 @@ async function loadSharedVault(vaultId) {
     await decryptSharedVault(vault);
     updateSharedVaultEditorVisibility();
     updateSelectedVaultName();
-    setStatus(`Shared vault "${vault.name}" loaded`);
   } catch (error) {
     state.activeSharedVault = null;
     updateSharedVaultEditorVisibility();
@@ -1212,8 +1210,6 @@ async function handleAuthentication(mode) {
   }
 
   try {
-    setStatus(mode === 'login' ? 'Logging in...' : 'Registering...');
-
     if (mode === 'register') {
       await apiRequest(
         '/register',
@@ -1260,7 +1256,6 @@ async function handleAuthentication(mode) {
 }
 
 async function loadVault() {
-  setStatus('Loading vault...');
 
   try {
     const payload = await apiRequest('/vault', { method: 'GET' }, true);
@@ -1287,7 +1282,6 @@ async function loadVault() {
     renderEntries();
     await syncSessionToBackground();
     await fetchSharedVaults();
-    setStatus('Vault ready');
     resetAutoLockTimer();
   } catch (error) {
     setStatus(`Failed to load vault: ${error.message}`, true);
