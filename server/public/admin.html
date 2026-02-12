@@ -197,6 +197,29 @@
         font-size: 0.95rem;
         color: #e2e8f0;
       }
+      .audit-table {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-top: 0.5rem;
+      }
+      .audit-row,
+      .audit-row-header {
+        display: grid;
+        grid-template-columns: 1fr minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1.2fr);
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+      }
+      .audit-row-header {
+        font-weight: 600;
+        color: #a5b4fc;
+      }
+      .audit-row span {
+        font-size: 0.9rem;
+        color: #e2e8f0;
+        word-break: break-word;
+      }
       .member-grid {
         display: flex;
         flex-direction: column;
@@ -288,6 +311,9 @@
         const [usersLoading, setUsersLoading] = useState(false);
         const [usersError, setUsersError] = useState('');
         const [activeSection, setActiveSection] = useState('vault');
+        const [auditEntries, setAuditEntries] = useState([]);
+        const [auditLoading, setAuditLoading] = useState(false);
+        const [auditError, setAuditError] = useState('');
 
         const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
 
@@ -313,10 +339,22 @@
         }, []);
 
         useEffect(() => {
-          if (!token && activeSection === 'sso') {
+          if (!token && ['sso', 'users', 'audit'].includes(activeSection)) {
             setActiveSection('vault');
           }
         }, [token, activeSection]);
+
+        useEffect(() => {
+          if (activeSection === 'users' && token) {
+            loadUsers();
+          }
+        }, [activeSection, token]);
+
+        useEffect(() => {
+          if (activeSection === 'audit' && token) {
+            loadAudit();
+          }
+        }, [activeSection, token]);
 
         useEffect(() => {
           if (activeSection === 'users' && token) {
@@ -488,6 +526,24 @@
             setUsersError(err.message);
           } finally {
             setUsersLoading(false);
+          }
+        };
+
+        const loadAudit = async () => {
+          if (!token) {
+            setAuditEntries([]);
+            setAuditError('');
+            return;
+          }
+          setAuditLoading(true);
+          setAuditError('');
+          try {
+            const payload = await fetchJson('/admin/audit', { headers });
+            setAuditEntries(payload.logs || []);
+          } catch (err) {
+            setAuditError(err.message);
+          } finally {
+            setAuditLoading(false);
           }
         };
 
@@ -889,6 +945,45 @@
             : React.createElement('p', null, 'No users yet.')
         );
 
+        const auditPanel = React.createElement(
+          'div',
+          { className: 'panel' },
+          React.createElement('h2', null, 'Audit log'),
+          auditLoading && React.createElement('p', null, 'Loading audit entries…'),
+          auditError && React.createElement('p', { className: 'status' }, auditError),
+          auditEntries.length
+            ? React.createElement(
+                'div',
+                { className: 'audit-table' },
+                React.createElement(
+                  'div',
+                  { className: 'audit-row audit-row-header' },
+                  React.createElement('span', null, 'Action'),
+                  React.createElement('span', null, 'User'),
+                  React.createElement('span', null, 'Timestamp'),
+                  React.createElement('span', null, 'Details')
+                ),
+                auditEntries.map((entry) => {
+                  const timestamp = entry.timestamp
+                    ? new Date(entry.timestamp).toLocaleString()
+                    : '—';
+                  const detailText =
+                    entry.details && Object.keys(entry.details).length
+                      ? JSON.stringify(entry.details)
+                      : '—';
+                  return React.createElement(
+                    'div',
+                    { key: entry.id, className: 'audit-row' },
+                    React.createElement('span', null, (entry.action ?? '—').replace(/_/g, ' ')),
+                    React.createElement('span', null, entry.username ?? entry.userId ?? 'system'),
+                    React.createElement('span', null, timestamp),
+                    React.createElement('span', null, detailText)
+                  );
+                })
+              )
+            : !auditLoading && React.createElement('p', null, 'No audit entries yet.')
+        );
+
         const ssoSettingsPanel = React.createElement(
           'div',
           { className: 'panel sso-panel' },
@@ -1000,14 +1095,21 @@
           { className: 'admin-placeholder' },
           'Sign in to view registered users.'
         );
+        const auditPlaceholder = React.createElement(
+          'div',
+          { className: 'admin-placeholder' },
+          'Sign in to view the audit log.'
+        );
 
         let mainContent;
         if (activeSection === 'vault') {
           mainContent = token ? managerPanels : loginPanel;
         } else if (activeSection === 'sso') {
           mainContent = token ? ssoSettingsPanel : ssoPlaceholder;
-        } else {
+        } else if (activeSection === 'users') {
           mainContent = token ? usersPanel : usersPlaceholder;
+        } else {
+          mainContent = token ? auditPanel : auditPlaceholder;
         }
 
         return React.createElement(
@@ -1048,6 +1150,17 @@
                   disabled: !token,
                 },
                 'Users'
+              )
+              ,
+              React.createElement(
+                'button',
+                {
+                  className: `nav-btn ${activeSection === 'audit' ? 'active' : ''}`,
+                  type: 'button',
+                  onClick: () => setActiveSection('audit'),
+                  disabled: !token,
+                },
+                'Audit log'
               )
             ),
             React.createElement('div', { className: 'admin-main' }, mainContent)

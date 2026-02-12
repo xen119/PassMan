@@ -20,7 +20,7 @@
       "msOid": "ppqIgrmY_74-O9An58w8-b1FxsdnDwspduraaFdubZM",
       "msEmail": "david@dev.gbnl.uk",
       "msName": "David N",
-      "lastLogin": "2026-02-12T16:11:54.410Z"
+      "lastLogin": "2026-02-12T16:33:59.310Z"
     }
   ],
   "vaults": [
@@ -105,5 +105,35 @@
   "config": {
     "msClientId": "9496929c-1e51-4753-a0ad-89a6de064c14",
     "msTenantId": "332901d6-db72-4c07-aafe-491bb28e26b8"
-  }
+  },
+  "auditLog": [
+    {
+      "id": "_G-vnk7esnT35_c0DRZOd",
+      "timestamp": "2026-02-12T16:35:46.298Z",
+      "action": "logout",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {}
+    },
+    {
+      "id": "LugMS54ipPObem8FBPwVm",
+      "timestamp": "2026-02-12T16:33:59.311Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
+    {
+      "id": "PAkvyCFOXncLJ8O8VH1ts",
+      "timestamp": "2026-02-12T16:33:13.740Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    }
+  ]
 }

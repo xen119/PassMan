@@ -1703,7 +1703,12 @@ customApiResetButton?.addEventListener('click', () => {
   loadMsSsoConfig().catch(() => {});
 });
 
-logoutBtn.addEventListener('click', () => {
+logoutBtn.addEventListener('click', async () => {
+  try {
+    await apiRequest('/logout', { method: 'POST' }, true);
+  } catch (error) {
+    console.warn('Logout audit failed', error);
+  }
   clearSessionState({ reason: 'user-logout' });
   setStatus('Signed out');
 });

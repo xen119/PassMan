@@ -34,6 +34,7 @@ async function ensureDb() {
   db.data.sharedVaults ||= [];
   db.data.msStates ||= [];
   db.data.config ||= {};
+  db.data.auditLog ||= [];
 }
 
 function cleanupMsStates() {
@@ -277,6 +278,22 @@ function createToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '12h' });
 }
 
+function recordAudit({ action, userId = null, username = null, details = {} }) {
+  db.data.auditLog ||= [];
+  const entry = {
+    id: nanoid(),
+    timestamp: new Date().toISOString(),
+    action,
+    userId,
+    username,
+    details,
+  };
+  db.data.auditLog.unshift(entry);
+  if (db.data.auditLog.length > 1000) {
+    db.data.auditLog.length = 1000;
+  }
+}
+
 async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization?.split(' ');
   if (!authHeader || authHeader[0] !== 'Bearer' || !authHeader[1]) {
@@ -348,9 +365,14 @@ app.post('/login', async (req, res) => {
   }
 
   user.lastLogin = new Date().toISOString();
-  await db.write();
-
   const token = createToken({ userId: user.id, username: user.username });
+  recordAudit({
+    action: 'login',
+    userId: user.id,
+    username: user.username,
+    details: { method: 'password' },
+  });
+  await db.write();
   res.json({
     token,
     user: {
@@ -358,6 +380,17 @@ app.post('/login', async (req, res) => {
       username: user.username,
     },
   });
+});
+
+app.post('/logout', authMiddleware, async (req, res) => {
+  await ensureDb();
+  recordAudit({
+    action: 'logout',
+    userId: req.user.userId,
+    username: req.user.username,
+  });
+  await db.write();
+  res.json({ success: true });
 });
 
 app.get('/vault', authMiddleware, async (req, res) => {
@@ -480,6 +513,12 @@ app.post('/shared-vaults', authMiddleware, async (req, res) => {
   };
 
   db.data.sharedVaults.push(vault);
+  recordAudit({
+    action: 'shared_vault_created',
+    userId: req.user.userId,
+    username: req.user.username,
+    details: { vaultId: vault.id, name: vault.name },
+  });
   await db.write();
 
   res.status(201).json({
@@ -512,6 +551,12 @@ app.post('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
     vault.memberKeys = { ...vault.memberKeys, ...wrappers };
   }
 
+  recordAudit({
+    action: 'shared_vault_saved',
+    userId: req.user.userId,
+    username: req.user.username,
+    details: { vaultId: vault.id, version: vault.version },
+  });
   await db.write();
 
   res.json({
@@ -562,6 +607,16 @@ app.patch('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
 
   vault.updatedAt = new Date().toISOString();
   vault.version = (vault.version ?? 0) + 1;
+  recordAudit({
+    action: 'shared_vault_updated',
+    userId: req.user.userId,
+    username: req.user.username,
+    details: {
+      vaultId: vault.id,
+      name: name ?? vault.name,
+      memberCount: Object.keys(vault.memberKeys || {}).length,
+    },
+  });
   await db.write();
 
   res.json({
@@ -584,6 +639,12 @@ app.delete('/shared-vaults/:vaultId', authMiddleware, async (req, res) => {
   }
 
   db.data.sharedVaults.splice(vaultIndex, 1);
+  recordAudit({
+    action: 'shared_vault_deleted',
+    userId: req.user.userId,
+    username: req.user.username,
+    details: { vaultId: vault.id, name: vault.name },
+  });
   await db.write();
 
   res.json({
@@ -618,6 +679,12 @@ app.post('/vault', authMiddleware, async (req, res) => {
     vault.updatedAt = new Date().toISOString();
   }
 
+  recordAudit({
+    action: 'personal_vault_saved',
+    userId: req.user.userId,
+    username: req.user.username,
+    details: { vaultId: vault.id, version: vault.version },
+  });
   await db.write();
 
   res.json({
@@ -730,9 +797,14 @@ app.get('/sso/ms/callback', async (req, res) => {
     user.msOid = msClaims.sub;
   }
   user.lastLogin = new Date().toISOString();
-  await db.write();
-
   const token = createToken({ userId: user.id, username: user.username });
+  recordAudit({
+    action: 'login',
+    userId: user.id,
+    username: user.username,
+    details: { method: 'ms-sso' },
+  });
+  await db.write();
   renderSsoResult(res, {
     type: 'ms-sso',
     token,
@@ -790,6 +862,14 @@ app.get('/admin/users', authMiddleware, async (_req, res) => {
     }))
     .sort((a, b) => a.username.localeCompare(b.username));
   res.json({ users });
+});
+
+app.get('/admin/audit', authMiddleware, async (req, res) => {
+  await ensureDb();
+  const rawLimit = Number(req.query.limit);
+  const limit = Number.isNaN(rawLimit) ? 50 : Math.min(200, Math.max(1, rawLimit));
+  const logs = (db.data.auditLog || []).slice(0, limit);
+  res.json({ logs });
 });
 
 app.get('/config', async (_req, res) => {
