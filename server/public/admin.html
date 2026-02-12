@@ -175,6 +175,28 @@
         color: #a5b4fc;
         min-height: 1.1rem;
       }
+      .user-table {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-top: 0.5rem;
+      }
+      .user-row,
+      .user-row-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+        gap: 0.75rem;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+      }
+      .user-row-header {
+        font-weight: 600;
+        color: #a5b4fc;
+      }
+      .user-row span {
+        font-size: 0.95rem;
+        color: #e2e8f0;
+      }
       .member-grid {
         display: flex;
         flex-direction: column;
@@ -262,6 +284,9 @@
         const msSsoWindowRef = React.useRef(null);
         const [msClientSecret, setMsClientSecret] = useState('');
         const [msClientSecretSet, setMsClientSecretSet] = useState(false);
+        const [usersList, setUsersList] = useState([]);
+        const [usersLoading, setUsersLoading] = useState(false);
+        const [usersError, setUsersError] = useState('');
         const [activeSection, setActiveSection] = useState('vault');
 
         const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
@@ -292,6 +317,12 @@
             setActiveSection('vault');
           }
         }, [token, activeSection]);
+
+        useEffect(() => {
+          if (activeSection === 'users' && token) {
+            loadUsers();
+          }
+        }, [activeSection, token]);
 
         useEffect(() => {
           const handleMsMessage = (event) => {
@@ -440,6 +471,23 @@
             setStatus('Vaults loaded.');
           } catch (err) {
             setStatus(err.message);
+          }
+        };
+
+        const loadUsers = async () => {
+          if (!token) {
+            setUsersList([]);
+            return;
+          }
+          setUsersLoading(true);
+          setUsersError('');
+          try {
+            const payload = await fetchJson('/admin/users', { headers });
+            setUsersList(payload.users || []);
+          } catch (err) {
+            setUsersError(err.message);
+          } finally {
+            setUsersLoading(false);
           }
         };
 
@@ -811,6 +859,36 @@
         const secretDescription = msClientSecretSet
           ? 'A client secret is stored. Leave this blank to keep it, or use Reset / Clear secret to remove it.'
           : 'No client secret stored. Provide one if your Azure app requires it.';
+        const usersPanel = React.createElement(
+          'div',
+          { className: 'panel' },
+          React.createElement('h2', null, 'Registered users'),
+          usersLoading && React.createElement('p', null, 'Loading users…'),
+          usersError && React.createElement('p', { className: 'status' }, usersError),
+          usersList.length
+            ? React.createElement(
+                'div',
+                { className: 'user-table' },
+                React.createElement(
+                  'div',
+                  { className: 'user-row user-row-header' },
+                  React.createElement('span', null, 'Username'),
+                  React.createElement('span', null, 'User ID'),
+                  React.createElement('span', null, 'Last login')
+                ),
+                usersList.map((user) =>
+                  React.createElement(
+                    'div',
+                    { key: user.id, className: 'user-row' },
+                    React.createElement('span', null, user.username ?? '—'),
+                    React.createElement('span', null, user.id),
+                    React.createElement('span', null, user.lastLogin ?? 'Never')
+                  )
+                )
+              )
+            : React.createElement('p', null, 'No users yet.')
+        );
+
         const ssoSettingsPanel = React.createElement(
           'div',
           { className: 'panel sso-panel' },
@@ -912,14 +990,25 @@
 
         const primaryColumn = token ? managerPanels : loginPanel;
 
-        const mainContent =
-          activeSection === 'vault'
-            ? token
-              ? managerPanels
-              : loginPanel
-            : token
-              ? ssoSettingsPanel
-              : React.createElement('div', { className: 'admin-placeholder' }, 'Sign in to access Microsoft SSO settings.');
+        const ssoPlaceholder = React.createElement(
+          'div',
+          { className: 'admin-placeholder' },
+          'Sign in to access Microsoft SSO settings.'
+        );
+        const usersPlaceholder = React.createElement(
+          'div',
+          { className: 'admin-placeholder' },
+          'Sign in to view registered users.'
+        );
+
+        let mainContent;
+        if (activeSection === 'vault') {
+          mainContent = token ? managerPanels : loginPanel;
+        } else if (activeSection === 'sso') {
+          mainContent = token ? ssoSettingsPanel : ssoPlaceholder;
+        } else {
+          mainContent = token ? usersPanel : usersPlaceholder;
+        }
 
         return React.createElement(
           'div',
@@ -948,6 +1037,17 @@
                   disabled: !token,
                 },
                 'Microsoft SSO settings'
+              )
+              ,
+              React.createElement(
+                'button',
+                {
+                  className: `nav-btn ${activeSection === 'users' ? 'active' : ''}`,
+                  type: 'button',
+                  onClick: () => setActiveSection('users'),
+                  disabled: !token,
+                },
+                'Users'
               )
             ),
             React.createElement('div', { className: 'admin-main' }, mainContent)

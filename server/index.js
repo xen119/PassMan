@@ -347,6 +347,9 @@ app.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
+  user.lastLogin = new Date().toISOString();
+  await db.write();
+
   const token = createToken({ userId: user.id, username: user.username });
   res.json({
     token,
@@ -726,6 +729,7 @@ app.get('/sso/ms/callback', async (req, res) => {
   } else if (!user.msOid) {
     user.msOid = msClaims.sub;
   }
+  user.lastLogin = new Date().toISOString();
   await db.write();
 
   const token = createToken({ userId: user.id, username: user.username });
@@ -773,6 +777,19 @@ app.post('/admin/config', async (req, res) => {
     msTenantId: config.msTenantId || ENV_MS_TENANT_ID || 'common',
     msClientSecretSet: Boolean(config.msClientSecret || ENV_MS_CLIENT_SECRET),
   });
+});
+
+app.get('/admin/users', authMiddleware, async (_req, res) => {
+  await ensureDb();
+  const users = (db.data.users || [])
+    .map((user) => ({
+      id: user.id,
+      username: user.username,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin || null,
+    }))
+    .sort((a, b) => a.username.localeCompare(b.username));
+  res.json({ users });
 });
 
 app.get('/config', async (_req, res) => {
