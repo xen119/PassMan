@@ -9,7 +9,21 @@ import {
   generateTotp,
 } from './crypto.js';
 
-const API_BASE = 'http://localhost:4000';
+const API_BASES = ['https://localhost:4000', 'http://localhost:4000'];
+let apiBaseIndex = 0;
+const getApiBase = () => API_BASES[apiBaseIndex];
+
+function fallbackToHttp() {
+  if (apiBaseIndex >= API_BASES.length - 1) {
+    return false;
+  }
+  apiBaseIndex += 1;
+  setStatus(
+    'Unable to reach the API over HTTPS—falling back to HTTP. Visit https://localhost:4000 once to trust the self-signed certificate for secure operation.',
+    true
+  );
+  return true;
+}
 
 const authSection = document.getElementById('auth-section');
 const vaultSection = document.getElementById('vault-section');
@@ -1188,17 +1202,24 @@ async function apiRequest(path, options = {}, withAuth = false) {
     headers.Authorization = `Bearer ${state.token}`;
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${getApiBase()}${path}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error ?? 'Network request failed');
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error ?? 'Network request failed');
+    }
+
+    return response.json();
+  } catch (error) {
+    if (fallbackToHttp()) {
+      return apiRequest(path, options, withAuth);
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 async function handleAuthentication(mode) {

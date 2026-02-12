@@ -7,6 +7,8 @@ const { JSONFile } = require('lowdb/node');
 const { nanoid } = require('nanoid');
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
+const selfsigned = require('selfsigned');
 
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'replace-this-later-secret';
@@ -443,6 +445,37 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Zero knowledge vault API listening on http://localhost:${PORT}`);
-});
+const USE_HTTPS = process.env.USE_HTTPS !== 'false';
+
+const startServer = () => {
+  if (USE_HTTPS) {
+    const { SSL_KEY_PATH, SSL_CERT_PATH, SSL_PASSPHRASE } = process.env;
+    let credentials;
+    if (SSL_KEY_PATH && SSL_CERT_PATH) {
+      credentials = {
+        key: fs.readFileSync(path.resolve(SSL_KEY_PATH)),
+        cert: fs.readFileSync(path.resolve(SSL_CERT_PATH)),
+        passphrase: SSL_PASSPHRASE,
+      };
+    } else {
+      const attrs = [{ name: 'commonName', value: 'localhost' }];
+      const pems = selfsigned.generate(attrs, { days: 365, keySize: 2048 });
+      credentials = {
+        key: pems.private,
+        cert: pems.cert,
+      };
+    }
+
+    https
+      .createServer(credentials, app)
+      .listen(PORT, () => {
+        console.log(`Zero knowledge vault API listening on https://localhost:${PORT}`);
+      });
+  } else {
+    app.listen(PORT, () => {
+      console.log(`Zero knowledge vault API listening on http://localhost:${PORT}`);
+    });
+  }
+};
+
+startServer();
