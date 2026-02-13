@@ -361,26 +361,6 @@ button:active {
   min-height: 36px;
 }
 
-.auto-lock-settings {
-  border-top: 1px dashed rgba(148, 163, 184, 0.4);
-  padding-top: 0.65rem;
-  margin-top: 0.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.auto-lock-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.auto-lock-summary strong {
-  font-size: 0.95rem;
-}
-
 .shared-vaults-panel {
   background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(148, 163, 184, 0.35);
@@ -808,14 +788,6 @@ button:active {
 .entry-modal {
   max-height: 80vh;
   overflow-y: auto;
-}
-
-.auto-lock-input-group input {
-  max-width: 4.5rem;
-}
-
-.auto-lock-input-group button {
-  flex-shrink: 0;
 }
 
 .pending-prompt {

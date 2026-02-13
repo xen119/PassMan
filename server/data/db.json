@@ -21,7 +21,7 @@
       "msOid": "ppqIgrmY_74-O9An58w8-b1FxsdnDwspduraaFdubZM",
       "msEmail": "david@dev.gbnl.uk",
       "msName": "David N",
-      "lastLogin": "2026-02-12T17:37:21.801Z"
+      "lastLogin": "2026-02-13T11:02:05.796Z"
     }
   ],
   "vaults": [
@@ -37,11 +37,11 @@
     {
       "id": "PG6bFZvWdISAUnu2jefdW",
       "userId": "LaY1lL97C5v2dwOBydar-",
-      "encryptedVault": "xkz334qrOA480F4fg4cXKAGN5a9Ro2gETCtoHe1an9TdveqBbJQP8PYca0cAU+EWBxKMGWtfzv64MpQnmiEHajqw4AZqn1KjFYchDp3cK2DcH/cMO0vv8JAOLlGHDf7FpIkocTyQNNGf6vXnm+UvJbgUvADsYUiSzgh+3xD8cWjszSe/8YeC7RJ6u6exVaKZLzzqPScEk7pqThfzrmETrfozaO1oKMFlv+SsUEfah5s8DUUNf6zmS6c1oH7QV+m1fiF9OIZjKHDp1FA+OZjTmJVM0yZ7KheBiehJJwRBS2SeNUydNg==",
-      "iv": "XdcSp907PsuILnoJ",
+      "encryptedVault": "Gb3F+sl1ehr8tE3l4+8LbiluYAI3P0ptVBDN7tI4GU70cq+sbaRVDuqyD8eNMZqE1qlihbtnG3tkrGCh6/KWV5N+hPcIloGvPkX1zNEAnW7ngCMX3bmAI3PFIVINm7PTVOSVo26gmVbYKtgK2WrqAVcQCqti054rN0ZT1XH78fpBVLcGpxqZ+fXt5AlBDVuci3bYp3uJfKFs07goqS1Biv71R6Qe8+Owd7oTfaKNi941s9r0S63cMtlRL34n2Usfyiq3r6mqjlgKrYcgXBtOm0I70994p6gmc60RcnBqPrfofoRfHfInz93dh1pXB8BOE2vEF0p0AXUO2oZLSGptUu/uICrBp3iRLQWKRrD2zgejd4q90cBZeV8x/DbBrbbRtn5D0Ba33qCuyQRS49kXTO2zCNjJau7WIZykSGwdnNv+E6uaWxLJF7YVVBi/eRA+gAo9MCn5FO22GTrt8cx0O+AnqNTXRnoGHA38fFhyANM0YMibhkw1SQzmB3mWDc4andoYuZosF4pRaMd0UTHFhbmEDnQ=",
+      "iv": "H+tfPZC8LBM4x+Of",
       "salt": "RmKAnYqPvXrnnt7MBW5ICQ==",
-      "version": 1,
-      "updatedAt": "2026-02-12T15:12:09.077Z"
+      "version": 2,
+      "updatedAt": "2026-02-13T10:44:26.705Z"
     }
   ],
   "sharedVaults": [
@@ -100,21 +100,140 @@
           "identifier": "david@dev.gbnl.uk"
         }
       }
-    }
-  ],
-  "msStates": [
+    },
     {
-      "state": "zvrars_m-lHzlcRBITw1J",
-      "codeVerifier": "VkWj7OjPsvNtfAXIR014l39pSN_UbNAG-efuiQG8ki4haU_VsiRi7YIupiPQ3jXWBrownTqKkii4n7bzMEg1lQ",
-      "codeChallenge": "fxHlkjmfRqMu6ann8gk44Vm8B48XZPjRw62m6JzrbQE",
-      "createdAt": 1770921588135
+      "id": "c9XxwdqO3InBUmU_LYudA",
+      "name": "Salt Vault",
+      "ownerId": "LaY1lL97C5v2dwOBydar-",
+      "encryptedVault": "EZO1QNLmXSHIUNAbH7rgmpLe",
+      "iv": "Hy3U/rTRmBLkvYrs",
+      "salt": "KvaQNZ/IbvGt0rR1F7lLcqAmLqcFhL5Qrnhyrw1ZbGo=",
+      "version": 1,
+      "updatedAt": "2026-02-12T18:43:15.805Z",
+      "memberKeys": {
+        "VWJvKBbEYYzYP9RPrvHIN": {
+          "identifier": "hkhan",
+          "wrappedKey": "KvaQNZ/IbvGt0rR1F7lLcqAmLqcFhL5Qrnhyrw1ZbGo=",
+          "role": "member",
+          "status": "active",
+          "invitedBy": "admin-ui",
+          "invitedAt": "2026-02-12T18:43:15.805Z"
+        },
+        "LaY1lL97C5v2dwOBydar-": {
+          "wrappedKey": "KvaQNZ/IbvGt0rR1F7lLcqAmLqcFhL5Qrnhyrw1ZbGo=",
+          "role": "owner",
+          "status": "active",
+          "invitedBy": "LaY1lL97C5v2dwOBydar-",
+          "invitedAt": "2026-02-12T18:43:15.805Z",
+          "identifier": "david@dev.gbnl.uk"
+        }
+      }
     }
   ],
+  "msStates": [],
   "config": {
     "msClientId": "9496929c-1e51-4753-a0ad-89a6de064c14",
     "msTenantId": "332901d6-db72-4c07-aafe-491bb28e26b8"
   },
   "auditLog": [
+    {
+      "id": "gaujHBixjqQlwbXJHsjCl",
+      "timestamp": "2026-02-13T11:02:05.796Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
+    {
+      "id": "0ZiWRbEM_JcIvmLIJOvTD",
+      "timestamp": "2026-02-13T10:45:01.836Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
+    {
+      "id": "YM28Kr3Mmv_MI1gR0riEs",
+      "timestamp": "2026-02-13T10:44:47.882Z",
+      "action": "logout",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {}
+    },
+    {
+      "id": "Mge8CFUPYBOEeKD8ZL4Ad",
+      "timestamp": "2026-02-13T10:44:26.705Z",
+      "action": "personal_vault_saved",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "vaultId": "PG6bFZvWdISAUnu2jefdW",
+        "version": 2
+      }
+    },
+    {
+      "id": "0OUZWrOCDEz6GLF0wQRVI",
+      "timestamp": "2026-02-13T10:43:24.906Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
+    {
+      "id": "Uskd5s_b6-mipf6W3zomF",
+      "timestamp": "2026-02-13T10:41:48.944Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
+    {
+      "id": "dTc7AutmZ3Q8v_OPPlysp",
+      "timestamp": "2026-02-12T18:52:08.933Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
+    {
+      "id": "dOs9roW9ePJeQXvv1yfjk",
+      "timestamp": "2026-02-12T18:43:47.493Z",
+      "action": "login",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "method": "ms-sso"
+      }
+    },
+    {
+      "id": "APeBOCNIOdM5VymT-Grnn",
+      "timestamp": "2026-02-12T18:43:15.805Z",
+      "action": "shared_vault_created",
+      "userId": "LaY1lL97C5v2dwOBydar-",
+      "username": "david@dev.gbnl.uk",
+      "details": {
+        "vaultId": "c9XxwdqO3InBUmU_LYudA",
+        "name": "Salt Vault"
+      }
+    },
+    {
+      "id": "WH0E2uszMaTWorar2MuID",
+      "timestamp": "2026-02-12T18:41:30.974Z",
+      "action": "logout",
+      "userId": "aNfSwc9Kl7vNxBurGw42h",
+      "username": "dnefdt",
+      "details": {}
+    },
     {
       "id": "rG2H1H6Gec7VnOgWzwhCq",
       "timestamp": "2026-02-12T18:39:52.582Z",
