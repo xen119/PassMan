@@ -42,6 +42,27 @@
         grid-template-columns: minmax(0, 1fr);
         align-items: stretch;
       }
+      .account-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.35rem;
+        margin-bottom: 1.2rem;
+      }
+      .account-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .account-username {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .account-status {
+        margin: 0;
+        font-size: 0.85rem;
+        color: #94a3b8;
+      }
       .admin-inner {
         display: grid;
         grid-template-columns: 220px minmax(0, 1fr);
@@ -293,6 +314,7 @@
         const [vaults, setVaults] = useState([]);
         const [selected, setSelected] = useState(null);
         const [sessionUserId, setSessionUserId] = useState('');
+        const [sessionUsername, setSessionUsername] = useState('');
         const [isEditingVault, setIsEditingVault] = useState(false);
         const [editName, setEditName] = useState('');
         const [editMembers, setEditMembers] = useState([]);
@@ -357,10 +379,12 @@
         }, [activeSection, token]);
 
         useEffect(() => {
-          if (activeSection === 'users' && token) {
+          if (token) {
             loadUsers();
+          } else {
+            setUsersList([]);
           }
-        }, [activeSection, token]);
+        }, [token]);
 
         useEffect(() => {
           const handleMsMessage = (event) => {
@@ -389,6 +413,7 @@
             setLoginUsername(msUser.username ?? '');
             setLoginPassword('');
             setSessionUserId(msUser.id ?? '');
+            setSessionUsername(msUser.username ?? '');
             setToken(msToken);
             setStatus(`Logged in as ${msUser.username ?? 'Microsoft user'}`);
           };
@@ -423,6 +448,7 @@
             setStatus(`Logged in as ${payload.user?.username ?? loginUsername.trim()}`);
             setLoginPassword('');
             setSessionUserId(payload.user?.id ?? '');
+            setSessionUsername(payload.user?.username ?? loginUsername.trim());
           } catch (err) {
             setStatus(err.message);
           } finally {
@@ -527,6 +553,18 @@
           } finally {
             setUsersLoading(false);
           }
+        };
+
+        const resolveMemberName = (member) => {
+          const identifier = member.identifier ?? member.userId;
+          if (!identifier) {
+            return 'unknown';
+          }
+          const user = usersList.find((entry) => entry.id === identifier);
+          if (user) {
+            return user.msName?.trim() || user.username || identifier;
+          }
+          return identifier;
         };
 
         const loadAudit = async () => {
@@ -708,8 +746,31 @@
           setVaults([]);
           setSelected(null);
           setSessionUserId('');
+          setSessionUsername('');
           setStatus('Signed out');
         };
+
+        const accountSection = token
+          ? React.createElement(
+              'div',
+              { className: 'account-section' },
+              React.createElement(
+                'div',
+                { className: 'account-row' },
+                React.createElement('span', { className: 'account-username' }, sessionUsername || 'Signed in user'),
+                React.createElement(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'secondary account-logout-btn',
+                    onClick: handleLogout,
+                  },
+                  'Log out'
+                )
+              ),
+              status && React.createElement('p', { className: 'status account-status' }, status)
+            )
+          : null;
 
         const startMsSso = () => {
           if (!msClientId.trim()) {
@@ -728,28 +789,6 @@
           msSsoWindowRef.current = popup;
           setStatus('Signing in with Microsoft…');
         };
-
-        const sessionPanel = React.createElement(
-          'div',
-          { className: 'panel' },
-          React.createElement('h2', null, 'Session'),
-          React.createElement('p', null, 'JWT captured automatically.'),
-          React.createElement('textarea', {
-            rows: 3,
-            readOnly: true,
-            value: token,
-          }),
-          React.createElement(
-            'button',
-            {
-              type: 'button',
-              onClick: handleLogout,
-              style: { marginTop: '0.5rem' },
-            },
-            'Log out'
-          ),
-          React.createElement('p', { className: 'status' }, status)
-        );
 
         const vaultListPanel = React.createElement(
           'div',
@@ -829,7 +868,7 @@
                       key: member.identifier ?? member.userId,
                       className: `member-chip ${member.role === 'viewer' ? 'viewer' : ''}`,
                     },
-                    `${member.identifier ?? member.userId ?? 'unknown'} (${member.role})`
+                    `${resolveMemberName(member)} (${member.role})`
                   )
                 )
               ),
@@ -1031,7 +1070,6 @@
         const managerPanels = React.createElement(
           React.Fragment,
           null,
-          sessionPanel,
           vaultListPanel,
           createPanel,
           selectedPanel,
@@ -1083,8 +1121,6 @@
           React.createElement('p', { className: 'status' }, status)
         );
 
-        const primaryColumn = token ? managerPanels : loginPanel;
-
         const ssoPlaceholder = React.createElement(
           'div',
           { className: 'admin-placeholder' },
@@ -1113,57 +1149,62 @@
         }
 
         return React.createElement(
-          'div',
-          { className: 'admin-layout' },
+          React.Fragment,
+          null,
+          accountSection,
           React.createElement(
             'div',
-            { className: 'admin-inner' },
+            { className: 'admin-layout' },
             React.createElement(
-              'nav',
-              { className: 'side-nav' },
+              'div',
+              { className: 'admin-inner' },
               React.createElement(
-                'button',
-                {
-                  className: `nav-btn ${activeSection === 'vault' ? 'active' : ''}`,
-                  type: 'button',
-                  onClick: () => setActiveSection('vault'),
-                },
-                'Vault Manager'
+                'nav',
+                { className: 'side-nav' },
+                React.createElement(
+                  'button',
+                  {
+                    className: `nav-btn ${activeSection === 'vault' ? 'active' : ''}`,
+                    type: 'button',
+                    onClick: () => setActiveSection('vault'),
+                  },
+                  'Vault Manager'
+                ),
+                React.createElement(
+                  'button',
+                  {
+                    className: `nav-btn ${activeSection === 'sso' ? 'active' : ''}`,
+                    type: 'button',
+                    onClick: () => setActiveSection('sso'),
+                    disabled: !token,
+                  },
+                  'Microsoft SSO settings'
+                )
+                ,
+                React.createElement(
+                  'button',
+                  {
+                    className: `nav-btn ${activeSection === 'users' ? 'active' : ''}`,
+                    type: 'button',
+                    onClick: () => setActiveSection('users'),
+                    disabled: !token,
+                  },
+                  'Users'
+                )
+                ,
+                React.createElement(
+                  'button',
+                  {
+                    className: `nav-btn ${activeSection === 'audit' ? 'active' : ''}`,
+                    type: 'button',
+                    onClick: () => setActiveSection('audit'),
+                    disabled: !token,
+                  },
+                  'Audit log'
+                )
               ),
-              React.createElement(
-                'button',
-                {
-                  className: `nav-btn ${activeSection === 'sso' ? 'active' : ''}`,
-                  type: 'button',
-                  onClick: () => setActiveSection('sso'),
-                  disabled: !token,
-                },
-                'Microsoft SSO settings'
-              )
-              ,
-              React.createElement(
-                'button',
-                {
-                  className: `nav-btn ${activeSection === 'users' ? 'active' : ''}`,
-                  type: 'button',
-                  onClick: () => setActiveSection('users'),
-                  disabled: !token,
-                },
-                'Users'
-              )
-              ,
-              React.createElement(
-                'button',
-                {
-                  className: `nav-btn ${activeSection === 'audit' ? 'active' : ''}`,
-                  type: 'button',
-                  onClick: () => setActiveSection('audit'),
-                  disabled: !token,
-                },
-                'Audit log'
-              )
-            ),
-            React.createElement('div', { className: 'admin-main' }, mainContent)
+              React.createElement('div', { className: 'admin-main' }, mainContent)
+            )
           )
         );
       }
